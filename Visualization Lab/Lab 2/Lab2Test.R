@@ -28,9 +28,9 @@ ggplot(ol, aes(ol$oleic, ol$eicosenoic, col = cut_interval(ol$linoleic, 3),
 
 
 #Q5
-ggplot(d, aes(d$oleic, d$eicosenoic, col = d$Region,
-              shape = cut_interval(d$palmitic, 3), 
-              size = cut_interval(d$palmitoleic, 3))) + geom_point()
+ggplot(ol, aes(ol$oleic, ol$eicosenoic, col = ol$Region,
+              shape = cut_interval(ol$palmitic, 3), 
+              size = cut_interval(ol$palmitoleic, 3))) + geom_point()
 
 #Q6
 p <- plot_ly(ol, labels = ~Area, type = 'pie', showlegend = FALSE) %>%
@@ -38,7 +38,7 @@ p <- plot_ly(ol, labels = ~Area, type = 'pie', showlegend = FALSE) %>%
 p
 
 #Q7
-ggplot(d, aes(ol$linoleic, ol$eicosenoic)) + geom_density2d()
+ggplot(ol, aes(ol$linoleic, ol$eicosenoic)) + geom_density2d()
 
 
 #Assignment 2
@@ -48,6 +48,8 @@ library(MASS)
 bball = read.xlsx("baseball-2016.xlsx", sheetName = "Sheet1", header = TRUE,
                   row.names = 1)
 head(bball)
+
+#Q2
 bball.numeric = scale(bball[,3:27])
 distance = dist(bball.numeric)
 res = isoMDS(distance, k=2)
@@ -59,19 +61,24 @@ coordsMDS$league = bball$League
 plot_ly(coordsMDS, x=~V1, y=~V2, type="scatter", mode = "markers"
         , hovertext=~name, color= ~league)
 
-?scale
-c = data.frame(x = 1:10, y = 101:110, z = 10001:10010, u = 121:130)
-c.numeric = scale(c)
-c
-c.numeric
-dtemp = dist(c.numeric)
-dtemp
-restemp = isoMDS(dtemp , k=2)
-coordstemp = restemp$points
-coordstemp = as.data.frame(coordstemp)
-coordstemp$name = rownames(coordstemp)
-coordstemp
-plot_ly(coordstemp, x=~V1, y=~V2, type="scatter", mode = "markers"
-        , hovertext=~name)
-?Shepard
-sh =Shepard(c, coordstemp)
+
+#Q3
+sh <- Shepard(distance, coords)
+delta <-as.numeric(distance)
+D<- as.numeric(dist(coords))
+
+n=nrow(coords)
+index=matrix(1:n, nrow=n, ncol=n)
+index1=as.numeric(index[lower.tri(index)])
+
+n=nrow(coords)
+index=matrix(1:n, nrow=n, ncol=n, byrow = T)
+index2=as.numeric(index[lower.tri(index)])
+
+plot_ly()%>%
+  add_markers(x=~delta, y=~D, hoverinfo = 'text',
+              text = ~paste('Obj1: ', rownames(music)[index1],
+                            '<br> Obj 2: ', rownames(music)[index2]))%>%
+  add_lines(x=~sh$x, y=~sh$yf)
+
+#Q4
