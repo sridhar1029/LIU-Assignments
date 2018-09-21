@@ -3,7 +3,6 @@ library(gridExtra)
 library(grid)
 library(plotly)
 library(shiny)
-library(dplyr)
 
 #Q1
 colNames = c("ID", "Length_of_Stay", "Age", "Infection_Risk", "Routine_Culturing_Ratio", 
