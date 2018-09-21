@@ -1,0 +1,192 @@
+---
+title: "Lab1"
+author: "Sridhar, Omkar"
+date: "16 September 2018"
+output: html_document
+df_print: paged
+theme: journal
+---
+
+```{r libs, echo=FALSE, message=FALSE}
+library(ggplot2)
+library(gridExtra)
+library(grid)
+library(plotly)
+library(knitr)
+library(shiny)
+library(dplyr)
+```
+
+
+# Lab 1 Assignment 2
+
+### 1 - Reading data from SENIC.txt file
+
+We are reading the data from SENIC.txt into the variable d. The dataset does not have any headers so we set the ID column in the data as the Row names for the data frame and set the column name manually according to the SENIC description file.
+
+```{r readData}
+colNames = c("ID", "Length_of_Stay", "Age", "Infection_Risk", "Routine_Culturing_Ratio", 
+             "Routine_Chest_X_ray_Ratio", "Number_of_Beds", "Medical_School_Affiliation", 
+             "Region", "Average_Daily_Census", "Number_of_Nurses", "Available_Facilities_and_Services")
+d = read.table("SENIC.txt", header = F, sep = "", row.names = 1, col.names = colNames)
+head(d)
+```
+
+### 2 - Function to find quantiles and outliers in a given column of data
+
+The function quantiles takes in a column of data and computes the quantile for the data. It stores the value for the first and the third quantile in the variables q1 and q3 accordingly. It then goes on to compute the extreme boundries for the data that is used to detect the outliers. These values are stored in the variables v1 and v2. The values v1, v2 are used to find the indices of the data points that are outliers for the data. It returns the indices.  
+
+```{r quantilesFun}
+quantiles = function(r){
+  q = quantile(r)
+  names(q) = NULL
+  q1 = q[2]
+  q3 = q[4]
+  v1 = q3 + 1.5*(q3-q1)
+  v2 = q1 - 1.5*(q3-q1)
+  u = union(which((r>v1)), which((r<v2)))
+  return(u)
+}
+quantiles(d$Infection_Risk)
+```
+
+
+### 3 - Using GGPLOT to create a Density Plot of Infection Risk with outliers
+
+The data set provided is roughly normally distributed. The outliers lie at both left-tail and right-tail. The instances of high infection risk is much lower than the instances of low infection risk.
+
+```{r dpInf}
+q = quantiles(d$Infection_Risk)
+plotQ3 = ggplot(d, aes(Infection_Risk)) + geom_density() +
+  geom_jitter(data = data.frame(x = d$Infection_Risk[q], y = 0), 
+              aes(x, y), height = 0, shape = 5, col = "red") + 
+  labs(title = "Infection Risk Density plot")
+plotQ3
+```
+
+
+### 4 - Density Plot for all quantitive variables
+
+ The plots for the variables such as Age, Infection Risk, Routine X-ray's, available facilities and services show that the data here is normally distributed. The variableäs such as Length of Stay, Routine Culturing Ratio, Number of beds, Average Daily census and Number of nurses have skewed distributions where the median is shifted to the left of the normal. The variable Medical School Affliaiton has a Binomial distribution as the variable is boolean. The density plot for the categorical variable Region has 4 high occurances as there are 4 segments. 
+ 
+```{r dpAll}
+plots = list()
+for(i in 1:11){
+  plotName = paste("P", i, sep = "")
+  colSel = colNames[i+1]
+  outliers = quantiles(d[,i])
+  if(!identical(outliers, integer(0))){
+    df = data.frame(x = d[,i][outliers], y = 0)
+    plotOutliers = geom_jitter(data = df, aes(x, y), height = 0, shape = 05, col = "red")
+    plots[[plotName]] = ggplot(d, aes_string(colSel)) + geom_density() + plotOutliers
+  }else {
+    plots[[plotName]] = ggplot(d, aes_string(colSel)) + geom_density()
+  }
+}
+grid.arrange(grobs = plots, ncol = 3, nrow = 4,
+             top = textGrob("Density plot for all Categories",gp=gpar(fontsize=20,font=3)))
+```
+
+
+### 5 Dependence of Infection risk on the Number of Nurses, colored by Number of Beds
+
+The possible danger of having such a color scale provided in the graphical output is that it is hard to distinguish the number of beds present against both the x and y axis variables. Although it can be seen that, the Number of beds is directly propotional to the Number of nurses. It is also hypothesised that where the number of beds is quite low consistently , high infection risk occurs at such places, although further hypothesis testing maybe required to assert such a statement.
+
+```{r scatterInf}
+ggplot(d, aes(Infection_Risk, Number_of_Nurses, col = Number_of_Beds)) + geom_point() +
+  labs(title = "Dependence of Infection Risk on Number of Nurses")
+```
+
+
+### 6 Using plotly to make an interactive density plot for Infection Risk 
+
+The new plot here is interactive in nature. We can now observe 6 outliers with infection risk beginning at 7.6 on the right tail and the infection risk of 1.4 on the left tail.
+
+```{r plotlyDp}
+ggplotly(plotQ3)
+```
+
+
+### 7  Using Plotly to Plot a histogram of Infection Risk 
+
+This plot was made completely using plotly. It uses the plotly.js binning algorithm by default. The plot shows the frequencies for the infection risk and the outliers are plotted on the x-axis.
+
+```{r plotlyHist}
+f <- list(
+  family = "Courier New, monospace",
+  size = 18,
+  color = "#7f7f7f"
+)
+x <- list(
+  title = "Infection Risk",
+  titlefont = f
+)
+y <- list(
+  title = "Frequency",
+  titlefont = f
+)
+outliers_inf = d$Infection_Risk[quantiles(d$Infection_Risk)]
+plot_ly(x = d$Infection_Risk, name = 'Infection Risk') %>% add_histogram(name = 'Infection Risk') %>%
+  add_trace(x = ~outliers_inf,y=0, name = 'outliers', 
+            type = 'scatter', mode = 'markers', symbol=I(05))%>% 
+  layout(title = "Infection Risk Histogram plot", xaxis = x, yaxis = y)
+```
+
+
+### 8 Shiny app for density plot of all categories 
+
+The bandwidth of the kernel is a free parameter which exhibits a strong influence on the resulting estimate.The curve with a bandwidth of h = 0.6 is considered to be optimally smoothed since its density estimate is close to the true density when observed for the variable infection risk as this variable is the focus of the study. The optimal bandwidth can be selected using methods such as Mean Intergrated Squared Error , rule of thumb with gaussian basis functions or other such methods.
+
+```{r shinyApp, eval=FALSE}
+ui <- fluidPage(
+  titlePanel(title = "Shiny app for density plots of all categories"),
+  fluidRow(
+    column(4, 
+    sliderInput("bw", "Bandwidth parameter:",
+                min = 0.1, max = 5, value = 0.6
+    ),
+    checkboxGroupInput("categories", "Categories to show:",
+                       c("Length of Stay" = "Length_of_Stay", 
+                         "Age" = "Age",
+                         "Infection Risk" = "Infection_Risk",
+                         "Routine Culturing Ratio" = "Routine_Culturing_Ratio", 
+                         "Routine Chest X-ray Ratio" = "Routine_Chest_X_ray_Ratio",
+                         "Number of Beds" = "Number_of_Beds",
+                         "Medical School Affiliation" = "Medical_School_Affiliation",
+                         "Region" = "Region",
+                         "Average Daily Census" = "Average_Daily_Census",
+                         "Number of Nurses" = "Number_of_Nurses",
+                         "Available Facilities and Services" = "Available_Facilities_and_Services"),
+                       selected = "Infection_Risk")
+    ),
+    column(8, plotOutput("plots"))
+  )
+)
+
+server <- function(input, output) {
+  output$plots <- renderPlot({
+    plots = list()
+    for(i in input$categories){
+      plotName = paste("P", i, sep = "")
+      colSel = i
+      outliers = quantiles(d[,i])
+      if(!identical(outliers, integer(0))){
+        df = data.frame(x = d[,i][outliers], y = 0)
+        plotOutliers = geom_jitter(data = df, aes(x, y), height = 0, shape = 05, col = "red"
+        plots[[plotName]] = ggplot(d, aes_string(colSel)) + geom_density(bw = input$bw) + plotOutliers
+      }else {
+        plots[[plotName]] = ggplot(d, aes_string(colSel)) + geom_density(bw = input$bw)
+      }
+    }
+    grid.arrange(grobs = plots, ncol = 3, nrow = 4)
+  })
+}
+
+shinyApp(ui, server)
+```
+
+
+###Appendix
+```{r append, ref.label= c("libs", "readData", "quantilesFun", "dpInf", "dpAll", "scatterInf", "plotlyDp", "plotlyHist", "shinyApp"), eval=FALSE}
+
+```
