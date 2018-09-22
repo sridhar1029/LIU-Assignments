@@ -234,8 +234,8 @@ shinyApp(
 
 
 ##ANother example
-library(ggplot2)
 
+m = mtcars
 ui <- fluidPage(
   fluidRow(
     column(width = 12,
@@ -263,8 +263,56 @@ server <- function(input, output) {
       hover=input$plot_hover
       dist=sqrt((hover$x-mtcars$mpg)^2+(hover$y-mtcars$disp)^2)
       cat("Weight (lb/1000)\n")
-      if(min(dist) < 3)
+      if(min(dist) < 3){
+        print(which.min(dist))
+        print("is this true!")
         mtcars$wt[which.min(dist)]
+      }
+    }
+  })
+}
+shinyApp(ui, server)
+
+
+##ANother try
+
+m = mtcars
+ui <- fluidPage(
+  fluidRow(
+    column(width = 8, plotOutput("plot1", height = 350,hover = hoverOpts(id ="plot_hover"))),
+    column(width = 4, verbatimTextOutput("hover_info"))
+    )
+)
+
+server <- function(input, output) {
+  
+  outliers_rv = reactiveVal()
+  df = data.frame(x = d$Infection_Risk[quantiles(d$Infection_Risk)], y = 0, z = "outs")
+  outliers_rv(df)
+  
+  output$plot1 <- renderPlot({
+    plotOutliers = geom_jitter(data = outliers_rv(), aes(x, y, col = z), height = 0, shape = 05)
+    ggplot(d, aes(Infection_Risk)) + geom_density() + plotOutliers
+  })
+  
+  output$hover_info <- renderPrint({
+    if(!is.null(input$plot_hover)){
+      hover=input$plot_hover
+      dist= sqrt((hover$x-d$Infection_Risk[quantiles(d$Infection_Risk)])^2)
+      if(min(dist) < 0.2){
+        print(which.min(dist))
+        ind = which.min(dist)
+        df = outliers_rv()
+        df$z = as.character(df$z)
+        df[ind, 'z'] = 'phigh'
+        df$z = as.factor(df$z)
+        outliers_rv(df)
+        d[which.min(dist), ]
+      }else {
+        df = outliers_rv()
+        df$z = "outs"
+        outliers_rv(df)
+      }
     }
   })
 }
