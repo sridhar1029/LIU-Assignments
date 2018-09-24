@@ -285,10 +285,14 @@ ui <- fluidPage(
 )
 
 server <- function(input, output) {
-  
   outliers_rv = reactiveVal()
   df = data.frame(x = d$Infection_Risk[quantiles(d$Infection_Risk)], y = 0, z = "outs")
   outliers_rv(df)
+  
+  distance <- function(x1, x2) {
+    dis = sqrt((x1-x2)^2)
+    min(dis)
+  }
   
   output$plot1 <- renderPlot({
     plotOutliers = geom_jitter(data = outliers_rv(), aes(x, y, col = z), height = 0, shape = 05)
@@ -298,8 +302,8 @@ server <- function(input, output) {
   output$hover_info <- renderPrint({
     if(!is.null(input$plot_hover)){
       hover=input$plot_hover
-      dist= sqrt((hover$x-d$Infection_Risk[quantiles(d$Infection_Risk)])^2)
-      if(min(dist) < 0.2){
+      dist= distance(hover$x, d$Infection_Risk[quantiles(d$Infection_Risk)])
+      if(dist < 0.2){
         print(which.min(dist))
         ind = which.min(dist)
         df = outliers_rv()
@@ -308,7 +312,8 @@ server <- function(input, output) {
         df$z = as.factor(df$z)
         outliers_rv(df)
         d[which.min(dist), ]
-      }else {
+      }
+      else{
         df = outliers_rv()
         df$z = "outs"
         outliers_rv(df)
