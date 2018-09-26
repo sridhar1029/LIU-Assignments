@@ -21,7 +21,7 @@ data2$Region = lapply(data2$Region, my_strip)
 data2$Region = as.character(data2$Region)
 levels(data2$Age) = c("Young", "Adult", "Senior")
 data2_rshaped = reshape(data2, idvar = "Region", timevar = "Age", direction = "wide", v.names = NULL)
-names(data2_rshaped) = c("Region","Adult","Senior","Youth")
+names(data2_rshaped) = c("Region", "Youth","Adult","Senior")
 head(data2_rshaped)
 ##End of preprocessing
 
@@ -72,3 +72,16 @@ p_adults<-plot_ly()%>%add_sf(data=rds, split=~NAME_1, color=~Adult, showlegend=F
 
 p_youth
 p_adults
+
+
+
+# 5 
+
+#key AlRfa71x67m52mlJBsyLUrLwspJin5Ie
+
+linkoping = read.csv("Linkoping.csv")
+p_youth_withLoc<-plot_ly()%>%add_sf(data=rds, split=~NAME_1, 
+                            color=~Youth, showlegend=F, alpha=1)%>%
+  add_markers(data = linkoping,
+    y = ~latitude, x = ~longitude, text = ~desc)
+p_youth_withLoc
