@@ -1,0 +1,11 @@
+---
+title: "dasds"
+author: "Sridhar"
+date: "September 19, 2018"
+output: html_document
+bibliography: SridharPaper.bib 
+---
+@Bergman_Life was a great man
+
+
+# References
