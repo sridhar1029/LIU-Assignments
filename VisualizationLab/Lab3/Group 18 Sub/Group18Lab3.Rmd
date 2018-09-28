@@ -1,0 +1,253 @@
+---
+title: "Lab3Assignment2"
+author: "Sridhar, Omkar"
+date: "September 27, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r q0, message=FALSE, echo=FALSE}
+library(ggplot2)
+library(plotly)
+library(dplyr)
+library(MASS)
+library(akima)
+library(stringi)
+```
+
+##Assignment 1
+
+###Q1
+
+In 2003, A high density of mosquitos was found in :
+-USA in the southern regions in and around Houston, Dallas, Memphis and Jackson is infested with Aedes albopictus.
+-Mexico, Along the cost of the gulf of Mexico
+-Brazil, Recife, Fortalezer and the southern regions of Brazil of the species, Aedes aegypti.
+-Uruguay
+-Kenya
+-India, Along the west coast of South of India of both species.
+-South East asian countries such as Indonesia, Thailand of both species, and Taiwan with the highest density of mosquitos is infested with Aedes albopictus
+
+In 2013, Brazil is heavily infested with mosquitos of the species, Aedes aegypti.
+        While, Taiwan is infested with Aedes albopictus along with other infestation in Italy.
+This plot on the map comes with the problem of Occlusion of the data points as most of brazil is plotted with markers. Illusionary effects can also occur when zoomed in as the observations seem to be equally spaced and this 
+creates illusionary dots while percieving
+
+```{r q1.1, message=FALSE}
+mosq<-read.csv("aegypti_albopictus.csv",header= TRUE, sep = ",")
+head(mosq)
+Sys.setenv('MAPBOX_TOKEN' = 'pk.eyJ1Ijoib2JodXRhcmEiLCJhIjoiY2ptYm9yczN1MDcwMzNwbnlqMTY0eDl2bCJ9.IIY_aDN7MAQ8U_sok4xDww')
+p10 <- mosq %>% filter(YEAR=='2004') %>% plot_mapbox(lat = ~Y, lon = ~X,
+              color = ~VECTOR, mode = 'scattermapbox',hoverinfo='name')
+p10
+
+p11 <- mosq %>% filter(YEAR=='2013') %>% plot_mapbox(lat = ~Y, lon = ~X,
+                                                   color = ~VECTOR, mode = 'scattermapbox',hoverinfo='name')
+p11
+```
+
+###Q2
+
+There are many number of countries with very few mosquito obsersvations and so large area's of the plot get a common color based on a large range as the significant numbers of mosquitos are in Taiwan which skews the colors represented as it is marked with red in the small area of Taiwan.
+Hence, there is little information conveyed by this map.
+
+```{r q1.2, message=FALSE}
+mosqcountry <- mosq %>% group_by(COUNTRY,COUNTRY_ID) %>%  summarise(Z=n())
+mosqcountry$hover<-with(mosqcountry, paste(mosqcountry$COUNTRY, '<br>', "Number of mosquito's are ", Z))
+head(mosqcountry)
+
+l <- list(color = toRGB("white"), width = 2)
+# specify some map projection/options
+g <- list(
+  projection = list(type = 'equirectangular')
+)
+tored <- c("#FFFF00","#FF0000")
+
+p2 <- plot_geo(mosqcountry) %>%
+  add_trace(
+    z = ~Z,color = ~Z, colors = tored,
+    text = ~paste(hover), locations = ~COUNTRY_ID
+  ) %>%
+  colorbar(title = "Number of Mosquitos") %>%
+  layout(
+    title = 'Number of mosquitos<br>(Hover for the number of mosquitos)',
+    geo = g
+  )
+p2
+```
+
+###Q3
+####Q3a
+
+Taiwan has the highest mosquito population observed from during the course of the study. With Brazil and USA coming after.
+
+```{r q1.31, message=FALSE}
+g1 <- list(
+  projection = list(type = 'azimuthal equidistant')
+)
+mosqcountry$logz=log(mosqcountry$Z)
+  
+p3a <- plot_geo(mosqcountry) %>%
+  add_trace(
+    z = ~Z,color = ~logz, colors = tored,
+    text = ~paste(hover), locations = ~COUNTRY_ID
+  ) %>%
+  colorbar(title = "Number of Mosquitos") %>%
+  layout(
+    title = 'Number of mosquitos<br>(Hover for the number of mosquitos)',
+    geo = g1
+  )
+p3a
+```
+
+####Q3b
+
+```{r q1.32, message=FALSE}
+g2 <- list(
+  projection = list(type = 'conic equal area')
+)
+
+p3b <- plot_geo(mosqcountry) %>%
+  add_trace(
+    z = ~Z,color = ~logz, colors = tored,
+    text = ~paste(hover), locations = ~COUNTRY_ID
+  ) %>%
+  colorbar(title = "Number of Mosquitos") %>%
+  layout(
+    title = 'Number of mosquitos<br>(Hover for the number of mosquitos)',
+    geo = g2
+  )
+p3b
+```
+
+In the equidistant projection, All points on the map are propotionately at equal distances from the center point.
+
+The term Conic projection is used to refer to any projection in which meridians are mapped to equally spaced lines radiating out from the apex and circles of latitude are mapped to circular arcs centered on the apex.
+The resulting conic map has low distortion in scale, shape, and area near those standard parallels.
+ 
+###Q4
+
+Recife , Salvador and Sao Paulo are the most infected by mosquitos, along the eastern coast of Brazil. Yes, the discretization helped in analysis as 
+the high occurance locations have now been identified and occlusion of data points is also avoided. 
+
+```{r q1.4, message=FALSE}
+mosqbrazil <- filter(mosq,COUNTRY_ID=="BRA",mosq$YEAR==2013)
+mosqbrazil$X1<-cut_interval(as.numeric(mosqbrazil$X),n=100)
+mosqbrazil$Y1<-cut_interval(as.numeric(mosqbrazil$Y),n=100)
+
+head(mosqbrazil)
+mosqbragrouped<- mosqbrazil %>%
+group_by(X1,Y1) %>% summarise("xlong"=mean(X),"ylat"=mean(Y),"totalmosq"=n())
+head(mosqbragrouped)
+
+Sys.setenv('MAPBOX_TOKEN' = 'pk.eyJ1Ijoib2JodXRhcmEiLCJhIjoiY2ptYm9yczN1MDcwMzNwbnlqMTY0eDl2bCJ9.IIY_aDN7MAQ8U_sok4xDww')
+p4 <- mosqbragrouped %>%  plot_mapbox(lat = ~ylat, lon = ~xlong, color = ~totalmosq, 
+                                      mode = 'scattermapbox',hoverinfo= ~totalmosq) %>% 
+  layout(title = 'Most infected by mosquitos',
+        font = list(color='white'),
+        plot_bgcolor = '#191A1A', paper_bgcolor = '#191A1A',
+        mapbox = list(style = 'dark'),
+        legend = list(orientation = 'h',
+                      font = list(size = 8)),
+        margin = list(l = 25, r = 25,
+                      b = 25, t = 25,
+                      pad = 2))
+p4
+```
+
+
+##Assignment 2
+
+###Question 1
+
+Reading and preprocessing data with swedish household income.
+
+```{r q2.1, message=FALSE}
+#Q2.1
+data2 = read.csv("SwedishHousehold.csv", skip = 2, col.names = c("Region", "Age", "Income"))
+head(data2)
+my_strip <- function(region) {
+  region = strsplit(as.character(region), " ")[[1]][2]
+}
+data2$Region = lapply(data2$Region, my_strip)
+data2$Region = as.character(data2$Region)
+levels(data2$Age) = c("Young", "Adult", "Senior")
+data2_rshaped = reshape(data2, idvar = "Region", timevar = "Age", direction = "wide", v.names = NULL)
+names(data2_rshaped) = c("Region", "Youth","Adult","Senior")
+head(data2_rshaped)
+```
+
+###Question 2
+
+This plot is shows that Income is highly dependent on the age of a person.Old people have a really high salary range and it is quiet similar for adults butthe salary range is very low for the youth.
+
+```{r q2.2, message=FALSE}
+#Q2.2
+plot_ly(data2, x=~factor(Age), y=~Income, type="violin", 
+        split=~factor(Age), box=list(visible=T)) %>%
+  layout(title ="Violin plot for Each age group")
+```
+
+
+###Question 3
+Yes I think linear regression would be a suitable model for this dependence.
+The range for adults and seniors is quiet similar and it is lower for the youth.I think Linear regression would give us a good fit to the data.
+```{r q2.3, message=FALSE}
+#Q2.3
+attach(data2_rshaped)
+s=interp(Senior,Youth,Adult, duplicate = "mean")
+detach(data2_rshaped)
+plot_ly(x=~s$x, y=~s$y, z=~s$z, type="surface")%>%
+  layout(title ="Surface Plot",scene = list(
+    xaxis = list(title = "Senior"),
+    yaxis = list(title = "Youth"),
+    zaxis = list(title = "Adult")
+  ))
+```
+
+###Question 4
+
+The previos plots had no information about the dependence of income on region.This plot provides good information of how income is also dependent on the region you are in.The income is usually higher in the southern part of sweden compared to the northern part.According to this plot, the highest paying jobs are in Stockholm.
+
+```{r q2.4, message=FALSE}
+#Q2.4
+rds<-readRDS("gadm36_SWE_1_sf.rds")
+rownames(data2_rshaped)=data2_rshaped$Region
+data2_rshaped["Västra", 1] = "Västra Götaland"
+data2_rshaped["Örebro", 1] = "Orebro"
+rownames(data2_rshaped)=data2_rshaped$Region
+rds$Youth=data2_rshaped[rds$NAME_1, "Youth"]
+rds$Adult=data2_rshaped[rds$NAME_1, "Adult"]
+rds$Senior=data2_rshaped[rds$NAME_1, "Senior"]
+p_youth<-plot_ly()%>%
+  add_sf(data=rds, split=~NAME_1, color=~Youth, showlegend=F, alpha=1)%>%
+  layout(title ="Choropleth map showing income for youth")
+p_adults<-plot_ly()%>%
+  add_sf(data=rds, split=~NAME_1, color=~Adult, showlegend=F, alpha=1)%>%
+  layout(title ="Choropleth map showing income for adults")
+p_youth
+p_adults
+```
+
+###Question 5
+
+This is the same Choropleth map we had in the previous question with the red marker showing Linkoping City.
+
+```{r q2.5, message=FALSE}
+#Q2.5
+linkoping = read.csv("Linkoping.csv")
+p_youth_withLoc<-plot_ly()%>%add_sf(data=rds, split=~NAME_1, 
+                                    color=~Youth, showlegend=F, alpha=1)%>%
+  add_markers(data = linkoping,
+              y = ~latitude, x = ~longitude, text = ~desc)%>%
+  layout(title ="Choropleth map showing income for youth")
+p_youth_withLoc
+```
+
+
+##Appendix
+```{r append, ref.label=c("q0", "q1.1", "q1.2", "q1.31", "q1.32", "1.4", "q2.1", "q2.2", "q2.3", "q2.4", "q2.5"), eval=FALSE}
+```
