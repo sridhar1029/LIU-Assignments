@@ -10,30 +10,38 @@ head(ol, 10)
 
 ggplot(ol, aes(palmitic, oleic, col = linolenic)) + geom_point()
 
-disc = cut_interval(ol$linolenic, 4)
+ol$disc = cut_interval(ol$linolenic, 4)
 ggplot(ol, aes(palmitic, oleic, col = disc)) + geom_point()
 
 
 #Q2
-ggplot(ol, aes(palmitic, oleic, col = disc)) + geom_point()
-ggplot(ol, aes(palmitic, oleic, size = disc)) + geom_point()
+ggplot(ol, aes(palmitic, oleic, col = ol$disc)) + geom_point()
+ggplot(ol, aes(palmitic, oleic, size = ol$disc)) + geom_point()
+levels(ol$disc)<-(0:3)*(pi/4)
+ol$disc<-as.numeric(as.character(ol$disc))
 ggplot(ol, aes(palmitic, oleic)) + geom_point() + 
-    geom_spoke(angle = ol$linolenic, radius = 40)
+  geom_spoke(angle = ol$disc, radius = 40)+
+ggtitle("Scatter plot of palmitic vs oleic discretized 
+by linolenic Orientation angle of spoke is 4 
+        classes of Linolenic")
 
 #Q3
 ggplot(ol, aes(oleic, eicosenoic, col = Region)) + geom_point()
+ggplot(ol, aes(oleic, eicosenoic, col = cut_interval(Region,3))) + 
+  geom_point()
 
 
 #Q4
-ggplot(ol, aes(ol$oleic, ol$eicosenoic, col = cut_interval(ol$linoleic, 3),
-              shape = cut_interval(ol$palmitic, 3), 
-              size = cut_interval(ol$palmitoleic, 3))) + geom_point()
-
+ggplot(ol, aes(ol$oleic, ol$eicosenoic, col = 
+                 cut_interval(ol$linoleic, 3),
+               shape = cut_interval(ol$palmitic, 3), 
+               size = cut_interval(ol$palmitoleic, 3))) + 
+  geom_point()
 
 #Q5
 ggplot(ol, aes(ol$oleic, ol$eicosenoic, col = ol$Region,
-              shape = cut_interval(ol$palmitic, 3), 
-              size = cut_interval(ol$palmitoleic, 3))) + geom_point()
+               shape = cut_interval(ol$palmitic, 3), 
+               size = cut_interval(ol$palmitoleic, 3))) + geom_point()
 
 #Q6
 p <- plot_ly(ol, labels = ~Area, type = 'pie', showlegend = FALSE) %>%

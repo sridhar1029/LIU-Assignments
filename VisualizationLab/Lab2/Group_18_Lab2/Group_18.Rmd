@@ -23,13 +23,13 @@ In the second plot, We have linoleic variable segmented into 4 groups, this give
 the data showing us the relative values for the groups. The perception problem of relative judgement is affected 
 as color hue comes with the highest error in human beings.
 
-```{r}
+```{r warning=FALSE}
 ol = read.csv("olive.csv", header = T, row.names = 1)
 head(ol, 10)
 
 ggplot(ol, aes(palmitic, oleic, col = linolenic)) + geom_point()
 
-disc = cut_interval(ol$linolenic, 4)
+ol$disc = cut_interval(ol$linolenic, 4)
 ggplot(ol, aes(palmitic, oleic, col = disc)) + geom_point()
 ```
 
@@ -43,21 +43,23 @@ and 2.1bits can be decoded.
 b)With size of object 4-5levels of feature can be percieved depending on human subject's 
 individualistic abilities, and 2.2bits can be decoded for this aesthetic.
 c)line orientation : 3bits can be decoded for this feature.
-
-```{r}
-ggplot(ol, aes(palmitic, oleic, col = disc)) + geom_point()
-ggplot(ol, aes(palmitic, oleic, size = disc)) + geom_point()
+```{r warning=FALSE}
+ggplot(ol, aes(palmitic, oleic, col = ol$disc)) + geom_point()
+ggplot(ol, aes(palmitic, oleic, size = ol$disc)) + geom_point()
+levels(ol$disc)<-(0:3)*(pi/4)
+ol$disc<-as.numeric(as.character(ol$disc))
 ggplot(ol, aes(palmitic, oleic)) + geom_point() + 
-    geom_spoke(angle = ol$linolenic, radius = 40)
+  geom_spoke(angle = ol$disc, radius = 40)+
+  ggtitle("Scatter plot of palmitic vs oleic discretized 
+          by linolenic Orientation angle")
 ```
 
 ####3
 
-Treisman's theory of preattentive processing is showcased in this example. With no segmentation done by Region,
-we do not easily identify the boundary, but with the second plot we see the same much quickly due to preattentive
-preprocessing of contrast and luminance.
+In the first plot, Region is considered numeric and plotted with color brightness. This makes it apparent that the different regions are interrelated but actually, no such relationship exists as Region is a categorical variable.
+Treisman's theory of preattentive processing is showcased in this example, with the second plot we see the same much quickly due to preattentive preprocessing of contrast and luminance as color hue is mapped to the categorical variable Region. 
 
-```{r}
+```{r warning=FALSE}
 ggplot(ol, aes(oleic, eicosenoic, col = Region)) + geom_point()
 ggplot(ol, aes(oleic, eicosenoic, col = cut_interval(Region,3))) + geom_point()
 ```
@@ -65,24 +67,28 @@ ggplot(ol, aes(oleic, eicosenoic, col = cut_interval(Region,3))) + geom_point()
 ####4
 
 The 3 colors are each mapped with contrast and size and these feature maps are parallely processed in our brain
-as this creates a problem of preattentive preprocessing while analysing 27 different types of observation as
-we tend to wrongly group the data in our perception
+as this creates a problem while analysing 27 different types of observation with 3 levels of mapping. Human channel capacity is limited to 10 levels of hue (3.1 bits), 5 levels of brightness (2.3 bits) and 4 to 5 levels of size (2.2 bits). On an average, we are also limited to 6-7 levels of different observations (2.6 bits).
+When using multiple mapping all at once, the channel capacity does not linearly increase as the sum of their their individual channel capacities. With size,brightness and hue used together, the channel capacity is 4.1 bits but the sum of the channel capacities is 7.6bits. Due to this, we cannot interpret the plot easily with preattentive preprocessing.
 
-```{r}
-ggplot(ol, aes(ol$oleic, ol$eicosenoic, col = cut_interval(ol$linoleic, 3),
-              shape = cut_interval(ol$palmitic, 3), 
-              size = cut_interval(ol$palmitoleic, 3))) + geom_point()
+
+```{r warning=FALSE}
+ggplot(ol, aes(ol$oleic, ol$eicosenoic, col = 
+                 cut_interval(ol$linoleic, 3),
+               shape = cut_interval(ol$palmitic, 3), 
+               size = cut_interval(ol$palmitoleic, 3))) + 
+  geom_point()
 ```
 
 ####5
 
 Size, contrast and shape are individual feature maps that are linked to different colors and hence preattentive 
-preprocessing helps in this case.
+preprocessing helps in this case. We can see a clear decision boundary amongst different regions. According to Triesman's theory, the human visual system splits different features into separate maps and processes them in parallel. This enables the system to ignore non-target information contained in the master map. This is seen here as the Region variable has clear decision boundaries that can be immediately observed with the respective color.
+This makes identify the clusters based on Region inspite of many other features in the plot.
 
-```{r}
+```{r warning=FALSE}
 ggplot(ol, aes(ol$oleic, ol$eicosenoic, col = ol$Region,
-              shape = cut_interval(ol$palmitic, 3), 
-              size = cut_interval(ol$palmitoleic, 3))) + geom_point()
+               shape = cut_interval(ol$palmitic, 3), 
+               size = cut_interval(ol$palmitoleic, 3))) + geom_point()
 ```
 
 ####6
@@ -90,16 +96,18 @@ ggplot(ol, aes(ol$oleic, ol$eicosenoic, col = ol$Region,
 Relative Judgement due to area is very high due to the plot made as a pie size as the dominant group of South-
 Apulia looks much larger than the other groups.
 
-```{r}
-p <- plot_ly(ol, labels = ~Area, type = 'pie', showlegend = FALSE) %>%
+```{r warning=FALSE}
+p <- plot_ly(ol, labels = ~Area, type = 'pie', showlegend = TRUE, textinfo="text", text="") %>%
   layout(title = 'Pie Chart Area')
 p
 ```
 
 ####7
-It is hard to look for outliers in the contour plot compared to the scatter plot. In the contour plot it shows we have 5 peak values but you wont be able to spot any difference for it in the scatter plot. The extreme values are not plotted in the contour plot. It is also hard to figure out clusters in the contour plot compared to a scatter plot which is a big issue in this plot.
+It is hard to look for outliers in the contour plot compared to the scatter plot. The extreme values are not plotted in the contour plot. It is also hard to figure out clusters in the contour plot compared to a scatter plot which is a big issue in this plot.
 
-```{r}
+In the contour plot it shows we have 5 peak values but you wont be able to spot any difference for it in the scatter plot. At some of the peaks shown by the contour plot there are no points there in the scatter plot, which can be very misleading. Like the peak in contour at approximately (900, 12) there are no corresponding points there in the contour plot. So contour plots can be misleading sometimes.
+
+```{r warning=FALSE}
 ggplot(ol, aes(ol$linoleic, ol$eicosenoic)) + geom_density2d()
 ggplot(ol, aes(ol$linoleic, ol$eicosenoic)) + geom_point()
 ```
