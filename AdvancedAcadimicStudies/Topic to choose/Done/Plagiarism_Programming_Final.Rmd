@@ -8,9 +8,8 @@ classoption: a4paper
 bibliography: SridharPaper.bib
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
+#Some sadkldk
+
 ##Abstract
 
 Technology helps students develop but it also attracts plagiarism. Availability of electronic material through the internet has a great positive impact on students, they get to learn a lot, and on the downside also increases the risk of intentional or unintentional plagiarism among students. Plagiarism is not just confined to an essay or text-based assignments. Programming assignments, being a part of most computer-based courses, have a different kind of plagiarism and it is difficult to detect. This paper explores the different reasons leading to plagiarism in programming assignments and examines ways we can detect and minimize it.

@@ -6,14 +6,8 @@ output: pdf_document
 documentclass: article
 classoption: a4paper
 bibliography: SridharPaper.bib
+abstract: "Technology helps students develop but it also attracts plagiarism. Availability of electronic material through the internet has a great positive impact on students, they get to learn a lot, and on the downside also increases the risk of intentional or unintentional plagiarism among students. Plagiarism is not just confined to an essay or text-based assignments. Programming assignments, being a part of most computer-based courses, have a different kind of plagiarism and it is difficult to detect. This paper explores the different reasons leading to plagiarism in programming assignments and examines ways we can detect and minimize it."
 ---
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-##Abstract
-
-Technology helps students develop but it also attracts plagiarism. Availability of electronic material through the internet has a great positive impact on students, they get to learn a lot, and on the downside also increases the risk of intentional or unintentional plagiarism among students. Plagiarism is not just confined to an essay or text-based assignments. Programming assignments, being a part of most computer-based courses, have a different kind of plagiarism and it is difficult to detect. This paper explores the different reasons leading to plagiarism in programming assignments and examines ways we can detect and minimize it.
 
 ##Introduction
 
@@ -31,6 +25,9 @@ In the paper, “Source code plagiarism- A student’s perspective” [-@Mike_Co
 
 The findings give a clear message that, along with detection and enforcement of appropriate penalties, it is also necessary to look beyond to understand clearly why plagiarism is so widespread. This study gives us a clear idea that for students writing program code, the training given is not effective in raising awareness of what constitutes plagiarism. Some areas of confusion in student’s mind are debatable, such as self-plagiarism and different definitions of plagiarism between institutions.
 
+In my opinion, the results obtained by the survey clearly state that there is a lack of knowledge in students about plagiarism in programming. The mean score obtained by the students was approximately half of the total score. According to the plot shown in Figure-1, only ten students were able to score above 12 out of 15, and more than 80% of the scores
+were below 10. I think, this gives us a clear understanding that just focusing on improving the plagiarism detection algorithms won’t solve the problem, institutions should also start focusing on why the students are involving in plagiarism. This would be a great step towards minimizing plagiarism in programming assignments.
+
 ##Plagiarism detection in programming languages
 
 Automated methods for finding plagiarism in student’s source code submissions have been in use for a very long time and there are many available search engines and services for it. The most common and effective technique for plagiarism detection in the source code is tokenizing the code and then searching a pair of submissions for long common substrings. According to Thomas Lancaster [-@Thomas_Fintan], some of the widely used services, that use this technique for plagiarism detection in the source code, are MOSS and JPlag. These are the services that are used by a majority of the institutions for detecting source code plagiarism in student submissions. Although this detection is well established, future research for improving these are going on and a lot of extensions have been made for these methods to improve results. PlaGate, as described by Mike Joy and Georgina Cosma [-@Mike_Joy_Cosma], is one such extension created. It is a novel tool that can be integrated into the existing detection tool to improve the performance. PlaGate implements a new approach for investigating the similarities between source code with a view to gathering evidence for proving plagiarism.
@@ -39,11 +36,14 @@ MOSS (Measure of Software Similarity), developed in 1994, as described in a pape
 
 JPlag, described in a paper by Lutz Prechelt [-@Lutz_Guido_Michal], is another such service for source code plagiarism detection. It is written in Java programming language and this works only with programming languages that are similar in syntax to Java. JPlag is mostly used for plagiarism detection with languages like Java, C, C++. The input to JPlag is a set of programs. It compares these programs pairwise, computing total similarity value for each pair and a set of similarity regions. JPlag converts each program into a string of canonical tokens. For the comparison of two programs, JPlag then covers one such token string by substrings taken from the other where possible.
 
+Source code plagiarism detection is a field of active research. According to me, using a good detection system to check student’s assignments for plagiarism, creates a fear among the students and motivates them to work on their assignments instead of copying it from someone. This is one of the best ways an institution can control intentional plagiarism.
+
 ##Conclusion
  
-Programming assignments are an important part of a course curriculum as they give the practical experience to the students. It plays a key role in shaping the learning curve of students. I think if proper knowledge is not provided to the students about plagiarism in programming assignments and appropriate techniques are not used for detecting plagiarism in the source code, the students are the one who suffers. They miss out on the most important part of the learning curve of the course. Students should be made aware of plagiarism and its consequences, that would motivate them to put some effort into their assignments.
+I think, programming assignments are important part of a course curriculum as they give the required practical experience to the students. It plays a key role in shaping the learning curve of students. I think if proper knowledge is not provided to the students about plagiarism in programming assignments and appropriate techniques are not used for
+detecting plagiarism in source code, the students are the one who suffer. They miss out on the most important part of the learning curve of the course. Students should be made aware of the consequences of plagiarism, that would motivate them to put some effort on their assignments.
 
-If the students are made aware of the techniques to use to avoid plagiarism in programming and proper services, like MOSS and JPlag, are used to detect plagiarism in programming assignments, this would reduce plagiarism and even benefit the learning of students. 
+According to me, institutions could include a project in the course for students from computer-based courses where the student is supposed to develop a basic plagiarism detection system. This could be a great way for the students to gain knowledge of how a source-code plagiarism detection system works and what constitutes as plagiarism. This could reduce a lot of unintentional plagiarism in programming assignments. I conclude, if the students are made aware of the techniques to use to avoid plagiarism in programming and proper services, like MOSS and JPlag, are used by institutions to detect plagiarism in programming assignments, this would reduce plagiarism and even benefit the learning of students.
 
 ###References
 
