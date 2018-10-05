@@ -1,0 +1,116 @@
+---
+title: "lab4vis"
+author: "Omkar Bhutra"
+date: "4 October 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+##Assignment 2
+###Q1
+```{r}
+adultdata<-read.csv(file ="adult.csv",header=FALSE,sep = ",")
+colnames(adultdata)<-c("Age","workclass","fnlwgt","education","educationnum","marital"
+                      ,"occupation","relationship","race","sex","capitalgain","capitalloss","Hoursperweek"
+                      ,"site","Income_level")
+```
+####Scatter plot 
+```{r}
+p<-ggplot(adultdata,aes(x=Hoursperweek,y=Age,color=Income_level))+geom_point()+geom_smooth()+
+  ggtitle("Scatter Plot - Hours/Week vs Age")
+ggplotly(p)
+```
+
+There is a problem of occlusion with a large number of observations plotted on a scatter plot. Not much can be derived from the scatter plot. People with income below 50K$ work longer hours at older ages.
+####Trellis plot
+```{r}
+p1<-ggplot(adultdata,aes(y=Age, x=Hoursperweek, color=Income_level))+geom_point()+geom_smooth()+
+  facet_grid(Income_level~.) + ggtitle("Trellis grid Plot - Hours/week vs Age" )                              
+ggplotly(p1)
+```
+
+In the Trellis plot above, it can be seen that person's with the income above 50K$ are mostly working between 25 to 75 hours per week.
+
+###Q2
+```{r}
+p2<-ggplot(adultdata,aes(x=Age,color=Income_level,fill=Income_level))+geom_density(alpha=0.2)+ggtitle("Denisty Plot - Age")
+ggplotly(p2)
+```
+
+Most people earning lesser than 50K$ per year are in their early 20's. Most people earning higher than 50K$ per year are in the age group of 35 to 45 years old.
+
+```{r}
+p3<-ggplot(adultdata,aes(x=Age,color=Income_level))+geom_density(alpha=0.2)+
+  facet_wrap(~marital)
+ggplotly(p3)
+```
+
+From the Trellis plot, we can observe that income levels do not affect Married-AF-spouse, Divorced, Separated and Widowed people as the plots nearly match both income groups. The largest difference in age is amongst Never married people. It can also be observed that Widowed people work more than all other groups.
+
+
+###Q3
+```{r}
+p4<-adultdata %>% filter(capitalloss!=0) %>% plot_ly(x =~educationnum,y= ~Age, z= ~capitalloss) %>% add_markers(size=0.2,opacity = 0.2)%>% layout(scene = list(xaxis = list(title = 'Education'), yaxis = list(title = 'Age'), zaxis = list(title = 'Capita lLoss')))
+p4
+```
+
+It is difficult to analyse this plot as there is occlusion of data. With marker size and opacity reduced, we can still see overplotting but it is observed that two cluster emerge from this data.
+Persons with education with a bachelors or masters degree have and person with high school education, Class 12 or some college education have high capital losses and this observation is unifrom across all working ages
+
+```{r}
+adultdata$Agedisc1 <-cut_number(adultdata$Age, 6)
+raster_3d1 <- adultdata %>% filter(capitalloss != 0) %>% ggplot(aes(x=educationnum, y=capitalloss)) + stat_density_2d(aes(fill = stat(density)), geom = "raster", contour = FALSE) + facet_wrap(Agedisc1~.) + ggtitle("Trellis Plot of Capital Loss vs. Education")
+raster_3d1
+ggsave("raster_3d.png", width = 40, height = 60, units = "cm")
+```
+
+
+###Q4
+####Q4a
+```{r}
+adultdata$Agedisc2 <-cut_number(adultdata$Age, 4)
+size_3d2 <- adultdata %>% filter(capitalloss != 0) %>% ggplot(aes(x=educationnum, y=capitalloss)) + stat_density_2d(aes(size = stat(density)), geom = "point",n=15, contour = FALSE) + facet_wrap(Agedisc2~.) + ggtitle("Trellis Plot of Capital Loss vs. Education")
+size_3d2
+```
+
+####Q4b
+```{r}
+Agerange <-lattice::equal.count(adultdata$Age, number=4, overlap=0.10) #overlap is 10%
+
+ 
+
+L<-matrix(unlist(levels(Agerange)), ncol=2, byrow = T)
+
+ 
+
+L1<-data.frame(Lower=L[,1],Upper=L[,2], Interval=factor(1:nrow(L)))
+
+ 
+
+index=c()
+
+Class=c()
+
+for(i in 1:nrow(L)){
+
+  Cl=paste("[", L1$Lower[i], ",", L1$Upper[i], "]", sep="")
+
+  ind=which(adultdata$Age>=L1$Lower[i] &adultdata$Age<=L1$Upper[i])
+
+  index=c(index,ind)
+
+  Class=c(Class, rep(Cl, length(ind)))
+
+}
+
+
+df4<-adultdata[index,]
+df4$Class<-as.factor(Class)
+df4 %>% filter(capitalloss!=0)
+ggplot(data = df4, aes(x=educationnum, y=capitalloss, color = capitalloss)) +
+geom_point() + facet_grid(Class~.) + ggtitle("Education vs. Capital Loss using Shingles")
+```
+ 
+In this case contribution by Shingles seems to be not too great, the advatage of shingles compared to simple split would be that sudden jumps in data would be missed if it occured in the transition period (change of quaters). The disadvantage is that choosing the optimum overlap is important, otherwise there would be redudunacy of data. Likewise, In the scatter trellis plot, The binning size is important and should be correctly chosen for proper analysis.

@@ -7,6 +7,7 @@ library(seriation)
 library(GGally)
 
 ### 1. Reading input and filter column by index
+
 price_data <- read.delim("prices-and-earnings.txt")
 price_data <- price_data[,c(1,2,5,6,7,9,10,16,17,18,19)]
 
@@ -63,7 +64,7 @@ plot_ly(x=colnames(reordmatr), y=rownames(reordmatr),
 ## Comparing the optimization
 criterion(dist(price_data_scale[rev(ord1_tsp)], method = "euclidean"), method = c("Gradient_raw", "Path_length"))
 criterion(dist(price_data_scale[rev(ord1)], method = "euclidean"), method = c("Gradient_raw", "Path_length"))
-
+criterion(dist(price_data_scale))
 
 
 ### 5. Parallel Coordinate Plots
@@ -105,3 +106,8 @@ reordmatr_transformed <- reordmatr%>%tidyr::gather(variable, value, -City, facto
 radar_plot <- reordmatr_transformed %>% ggplot(aes(x=variable, y=value, group=City)) + geom_polygon(fill="blue") + coord_polar() + theme_bw() + facet_wrap(~ City) + theme(axis.text.x = element_text(size = 5))
 
 ggsave("radar_plot.png", width = 40, height = 60, units = "cm")
+
+
+
+
+
