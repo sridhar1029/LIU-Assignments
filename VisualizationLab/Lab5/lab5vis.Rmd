@@ -1,0 +1,239 @@
+---
+title: "lab5vis"
+Author: "Omkar Bhutra(omkbh878), Sridhar Adhikarla(sriad858)"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r warning=FALSE, echo=FALSE, include=FALSE}
+library(plotly)
+library(crosstalk)
+library(tidyr)
+library(RColorBrewer)
+library(wordcloud)
+library(tm)
+library(GGally)
+```
+
+##Assignment 1
+###Question 1
+```{r}
+five<-read.table("Five.txt",header=F, sep='\n')
+five <- data.frame(doc_id=row.names(five),
+                       text=five$V1)
+mycorpus1 <- Corpus(DataframeSource(five)) #Creating corpus (collection of text data)
+mycorpus1 <- tm_map(mycorpus1, removePunctuation)
+mycorpus1 <- tm_map(mycorpus1, function(x) removeWords(x, stopwords("english")))
+tdm1 <- TermDocumentMatrix(mycorpus1) #Creating term-document matrix
+m1 <- as.matrix(tdm1)
+
+
+v1 <- sort(rowSums(m1),decreasing=TRUE) #Sum up the frequencies of each word
+d1 <- data.frame(word = names(v1),freq=v1) #Create one column=names, second=frequences
+pal1 <- brewer.pal(8,"Dark2")
+pal1 <- pal1[-(1:2)] #Create palette of colors
+wordcloud::wordcloud(d1$word,d1$freq, scale=c(8,.3),min.freq=2,max.words=100, 
+          random.order=F, rot.per=.15, colors=pal1, vfont=c("sans serif","plain"))
+```
+
+```{r}
+oneTwo<-read.table("OneTwo.txt",header=F, sep='\n')
+oneTwo <- data.frame(doc_id=row.names(oneTwo),
+                   text=oneTwo$V1)
+mycorpus2 <- Corpus(DataframeSource(oneTwo)) #Creating corpus (collection of text data)
+mycorpus2 <- tm_map(mycorpus2, removePunctuation)
+mycorpus2 <- tm_map(mycorpus2, function(x) removeWords(x, stopwords("english")))
+tdm2 <- TermDocumentMatrix(mycorpus2) #Creating term-document matrix
+m2 <- as.matrix(tdm2)
+
+v2 <- sort(rowSums(m2),decreasing=TRUE) #Sum up the frequencies of each word
+d2 <- data.frame(word = names(v2),freq=v2) #Create one column=names, second=frequences
+pal2 <- brewer.pal(8,"Dark2")
+pal2 <- pal2[-(1:2)]
+wordcloud::wordcloud(d2$word,d2$freq, scale=c(8,.3),min.freq=2,max.words=100, 
+          random.order=F, rot.per=.15, colors=pal2, vfont=c("sans serif","plain"))
+```
+
+The satisfied customers seem to be present in the first wordcloud, they mention that the casio watch is great, durable and lasted many years. The price is right and makes the watch a value for money buy. The many features of dual 'analog' and 'digital' display are mentioned with 'battery','replacement' and 'service' being taken positively.
+The unsatisfied customers mention casio watches bough from 'amazon' and that they might have had 'defective' watched that got 'stuck' and went ' still'. The 'price','battery','replacement' are viewed negatively by this group.
+
+###Question 2
+
+```{r pressure, echo=FALSE, out.width = '100%'}
+knitr::include_graphics("phrasenet1.png")
+knitr::include_graphics("phrasenet2.png")
+```
+Phrase nets for Five.txt and OneTwo.txt as given above
+
+In the first phrase net, the 'watch' connected to 'durable','awesome','better', the value for money is mentioned with 'price' connected to 'right', the battery of the watched has been mentioned, replacement of the common parts such as the strap, battery, circuit are mentioned.
+Satisfied customers are mentioning words such as 'durable' ,'unbeatable','better','awesome'. They mention that the watch is 'comfortable', 'watar' suggesting it perfoms well underwater, changed the 'battery', they also suggest 'happy', 'pleased' and 'promised' suggesting the watch does everything as advertised. The mention models such as 'citizen'.
+The unsatisfied customers mention words such as 'stuck', 'hot','shame', 'disappointed'. Many people perhaps tried to 'replace' 'battery' and 'circuit. They also mention they had 'defective' watch. 
+They also mention 'strap, 'design', 'analog'  linked to words like 'like' and 'good' which are similar to the satisfied customers views as well. Both groups also mention 'battery' and 'replace'. Both groups generally mention that the watch looked good.
+Yes, the graph gives us details of the types of display such as 'digital' and 'analog', design and features such as the 'strap, 'battery','metal','modern' are mentioned.
+
+###Question 3
+
+```{r}
+knitr::include_graphics("batterybad.png")
+knitr::include_graphics("battery.png")
+```
+
+Intresting views about the battery have been mentioned, such as:
+Negative: Customers say that the watch stopped working in just a few months so they replaced the battery but the watch got slower and did not keep time correctly.
+Positive: Customers mention that just battery replacement worked for them even as many as 4 times and the watch continued to work accurately for several years.
+
+Properties of the watch mentioned:
+   Appearence- Black, Gold and White face
+   Technological advance of the watch
+   Value for money
+   Display features- Analog and Digital display
+   Luminousity
+   
+ Characteristics of the watch:
+   Display- Digital and analog display
+   Chronometer
+   Sporty look
+   Luminous display
+   Face- Black,Gold or White
+   Water proof
+   Velcro nylon or metal band   
+   
+ Satisified customers are talking about-
+   Good appearence- modern look
+   Simple and sporty look
+   Durability
+   Economical pricing
+   Comfortable
+   Durablility
+   Velcro band and metal band- types of bands
+   Water resistant
+   Toughness of the watch
+   Casio's efforts in making atomic watches and also solar powered watches
+   
+ Dissatisified customers are talking about-
+   Low luminosity
+   Defective alarm
+   Analog display is defective
+   Buttons defective and damage easily
+   Chronometer not working
+   Low volume on alarm
+   Tough to get the defective product replaced
+   Dial getting stuck
+   Doesnt work when lunged deep in water
+   
+Positive and Negative properties:
+Positive:
+     Appearence due to face and size
+     Economical
+     Water resistant
+     Sporty and modern look
+     Tough 
+     Durable
+Negative:
+     Luminousity
+     Alarm
+     Bad quality buttons
+     Accuracy of time of Analog display
+     Replacement
+
+##Assignment 2
+
+```{r}
+olive<- read.csv("olive.csv")
+d <- SharedData$new(olive)
+scatterOlive <- plot_ly(d, x = ~eicosenoic, y = ~linoleic) %>%
+  add_markers(color = I("blue"))
+scatterOlive
+```
+
+Observations with unusually low values of eicosenoic are (1,2,3). The occur at all ranges of linoleic (y-axis) values.
+
+```{r}
+
+d <- SharedData$new(olive)
+olive$Region<-as.factor(olive$Region)
+levels(olive$Region)<-c("North","South","Sardinia Island")
+barOlive <-plot_ly(d, x=~Region)%>%add_histogram()%>%layout(barmode="overlay")
+
+subplot(scatterOlive,barOlive)%>%
+  highlight(on="plotly_select", dynamic=T, persistent = T, opacityDim = I(1))%>%hide_legend()
+
+bscols(widths=c(3, NA),filter_slider("Slider", "Stearic", d, ~stearic)
+       ,subplot(scatterOlive,barOlive)%>%
+         highlight(on="plotly_select", dynamic=T, persistent = T, opacityDim = I(1))%>%hide_legend())
+```
+
+Persistent brushing was used to identify regions that correspond to unusually low values of eicosenoic, these regions are 'South' and 'Sardinia Island'.
+No additional information was found using the slider for the stearic value. The data was distributed consistenly amoung the regions for different values of stearic. 
+
+
+```{r}
+scatterOlive2 <- plot_ly(d, x = ~arachidic, y = ~linolenic) %>%
+  add_markers(color = I("black"))
+subplot(scatterOlive,scatterOlive2)%>%
+  highlight(on="plotly_select", dynamic=T, persistent=T, opacityDim = I(1))%>%hide_legend()
+```
+
+```{r}
+p<-GGally::ggparcoord(olive, columns = c(4:11))
+
+dcro<-plotly_data(ggplotly(p))%>%group_by(.ID)
+d1<-SharedData$new(dcro, ~.ID, group="olive")
+p1<-plot_ly(d1, x=~variable, y=~value)%>%
+  add_lines(line=list(width=0.3))%>%
+  add_markers(marker=list(size=0.3),
+              text=~.ID, hoverinfo="text")
+
+olive2=olive
+olive2$.ID=1:nrow(olive)
+d2<-SharedData$new(olive2, ~.ID, group="olive")
+p2<-plot_ly(d2, x=~factor(Region) )%>%add_histogram()%>%layout(barmode="stack")
+
+ButtonsX=list()
+for (i in 4:11){
+  ButtonsX[[i-3]]= list(method = "restyle",
+                        args = list( "x", list(olive[[i]])),
+                        label = colnames(olive)[i])
+}
+
+ButtonsY=list()
+for (i in 4:11){
+  ButtonsY[[i-3]]= list(method = "restyle",
+                        args = list( "y", list(olive[[i]])),
+                        label = colnames(olive)[i])
+}
+ButtonsZ=list()
+for (i in 4:11){
+  ButtonsZ[[i-3]]= list(method = "restyle",
+                        args = list( "z", list(olive[[i]])),
+                        label = colnames(olive)[i])
+}
+
+olive3=olive
+olive3$.ID=1:nrow(olive)
+d3<-SharedData$new(olive3, ~.ID, group="olive")
+
+p3<-plot_ly(d3,x=~ButtonsX,y=~ButtonsY,z=~ButtonsZ)%>%add_markers() %>% layout(xaxis=list(title=ButtonsX), yaxis=list(title=ButtonsY),zaxis=list(title=ButtonsZ),
+         title = "Select variable:",
+         updatemenus = list(
+           list(y=0.9, buttons = ButtonsX),
+           list(y=0.6, buttons = ButtonsY),
+           list(y=0.3, buttons = ButtonsZ)
+         )  )
+
+ps<-htmltools::tagList(p1%>%
+                         highlight(on="plotly_select", dynamic=T, persistent = T, opacityDim = I(1))%>%
+                         hide_legend(),
+                       p2%>%
+                         highlight(on="plotly_select", dynamic=T, persistent = T, opacityDim = I(1))%>%
+                         hide_legend(),
+                       p3%>%highlight(on="plotly_click", dynamic=T, persistent = T)%>%hide_legend()
+                      ) 
+
+
+htmltools::browsable(ps)
+```
+
