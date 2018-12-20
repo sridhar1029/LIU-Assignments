@@ -1,0 +1,332 @@
+---
+title: "Complementary Task Group_18"
+author: "Sridhar, Omkar"
+date: "13 December 2018"
+output: 
+    html_document:
+      toc : true
+      toc_depth: 3
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#Required Libs
+library(ggplot2)
+library(plotly)
+library(readxl)
+library(MASS)
+library(gridExtra)
+library(visNetwork)
+library(tidyverse)
+library(igraph)
+library(plotly)
+library(seriation)
+```
+
+
+# Assignment 2 Lab 2 with 30% of data randomly selected
+
+## 1 Load Data file and randomly selected 30% of the data
+
+The columns vary a lot in the range. Some values like BAvg are averages so are in a range of 0.235 to 0.282, while values like TB are in the range 2090 to 2615. This is the reason scaling is required before we apply Non- metric MDS. Scaling the data gets all the values in the same range, this would allow the NMDS algorithm to reduce the dimensions of the data more efficiently.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#Q1
+bball = read_xlsx("baseball-2016.xlsx", sheet = "Sheet1", col_names = TRUE)
+bball = as.data.frame(bball)
+smp_size <- floor(0.30 * nrow(bball))
+## set the seed to make your partition reproducible
+set.seed(12345)
+rand_ind <- sample(seq_len(nrow(bball)), size = smp_size)
+rand_selected = bball[rand_ind, ]
+rownames(rand_selected) = bball[rand_ind, ]$Team
+#head(rand_selected)
+```
+
+## 2 Performing Non-Metric MDS
+
+Since the data points are reduced to just 30%, it is hard to see a difference between the legues in this plot. We could say that the National League(NL) teams are spread out towards the positive side of the Y-axis, and the American League(AL) teams are more spread towards the negative side of the Y-axis. The points are well spread out so it is hard to tell if a MDS component is providing better differentiation between the leagues. In my opinion V1 was doing a better split between the leagues compared to V2.
+
+According to this plot "Kansas City Royals" looks like an outlier to me. Since the number of points are very few it is hard to tell anything about it.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#Q2
+bball.numeric = scale(rand_selected[,3:27])
+distance = dist(bball.numeric)
+res = isoMDS(distance, k=2, p=2)
+coords = res$points
+
+coordsMDS = as.data.frame(coords)
+coordsMDS$name = rownames(coordsMDS)
+coordsMDS$league = rand_selected$League
+plot_ly(coordsMDS, x=~V1, y=~V2, type="scatter", mode = "markers"
+        , hovertext=~name, color= ~league)
+```
+
+## 3 Shepard Plot
+
+MDS was able to decrease the stress value upto 8.6%. Given that the dataset had 26 dimension and very few data points, getting it down to 2 dimensions, with stress level of 8.6 is good.
+
+Some of the observation pairs that were hard for MDS to map were -
+
+"Chicago Cubs and St Louis Cardinals"
+
+"Minnesota Twins and St Louis Cardinals"
+
+"Chicago Cubs and Pittsburg pirates"
+
+"Chicago Cubs and Cleveland Indians"
+
+
+It looks like "Chicago Cubs" and "St Louis Cardinals" were common amoung most of the points that MDS found hard to map.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#Q3
+sh <- Shepard(distance, coords)
+delta <-as.numeric(distance)
+D<- as.numeric(dist(coords))
+
+n=nrow(coords)
+index=matrix(1:n, nrow=n, ncol=n)
+index1=as.numeric(index[lower.tri(index)])
+
+n=nrow(coords)
+index=matrix(1:n, nrow=n, ncol=n, byrow = T)
+index2=as.numeric(index[lower.tri(index)])
+
+plot_ly()%>%
+  add_markers(x=~delta, y=~D, hoverinfo = 'text',
+              text = ~paste('Obj1: ', rownames(rand_selected)[index1],
+                            '<br> Obj 2: ', rownames(rand_selected)[index2]))%>%
+  add_lines(x=~sh$x, y=~sh$yf)
+```
+
+## 4 Series of Plots against V1
+
+Since V1 was spliting the leagues better, I plotted all the variables against it and found that Runs per game and RBI had a strong negative correlation with V1. On searching for these on google we found, these two turned out to be really important factors in baseball to differentiate teams and rank them.
+
+Runs Per Game - It is clearly an important statistic in baseball as the team scoring more runs pre game on average is the better team. It is an important differentiating factor between teams.
+
+RBI(Runs batted in) - RBI is a statistic in baseball that credits a batter for making a play that allows a run to be scored. The top teams in the league have a high RBI. It is an important batting statistic in baseball.
+
+Both of these Runs pre Game and RBI are important batting statistics in baseball and both of them were negatively correlated to V1.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#Q4
+rand_selected$V1 = coordsMDS$V1
+rand_selected$V2 = coordsMDS$V2
+
+cols_bball = c("Team", "League", "Won", "Lost", "Runs.per.game", "HR.per.game", 
+               "AB", "Runs", "Hits", "TwoB", "ThreeB", "HR", "RBI", "StolenB", "CaughtS",
+               "BB", "SO", "BAvg", "OBP", "SLG", "OPS", "TB", "GDP", "HBP", "SH",
+               "SF", "IBB", "LOB", "V1", "V2")
+colnames(rand_selected) = cols_bball
+#dim(rand_selected)[2]
+plots_bball = list()
+for(i in 3:27){
+  pl_name = paste("P", i-1, sep = '')
+  col_name = cols_bball[i]
+  plots_bball[[pl_name]] = ggplot(rand_selected, aes_string("V1", col_name)) + 
+    geom_point() + geom_line(aes(x=0))
+}
+#grid.arrange(grobs = plots_bball, ncol = 6, nrow = 6)
+
+# plots_bball$P2
+# plots_bball$P3
+plots_bball$P4  #Runs per game
+# plots_bball$P5
+# plots_bball$P6 #AB
+# plots_bball$P7 #Runs **
+# plots_bball$P8 #Hits **
+# plots_bball$P9
+# plots_bball$P10
+# plots_bball$P11
+plots_bball$P12 #RBI **
+# plots_bball$P13
+# plots_bball$P14
+# plots_bball$P15
+# plots_bball$P16
+# plots_bball$P17 #BAvg
+# plots_bball$P18
+# plots_bball$P19 #SLG
+# plots_bball$P20 #OPS  **
+# plots_bball$P21 #TB  **
+# plots_bball$P22
+# plots_bball$P23
+# plots_bball$P24
+# plots_bball$P25
+# plots_bball$P26
+# plots_bball$P27
+# plots_bball2 = list()
+# for(i in 2:27){
+#   pl_name = paste("P", i, sep = '')
+#   col_name = cols_bball[i]
+#   plots_bball2[[pl_name]] = ggplot(rand_selected, aes_string("V2", col_name)) + 
+#     geom_point() + geom_line(aes(x=0))
+# }
+# grid.arrange(grobs = plots_bball2, ncol = 6, nrow = 6)
+# plots_bball2$P2
+# plots_bball2$P3
+# plots_bball2$P4
+# plots_bball2$P5
+# plots_bball2$P6
+# plots_bball2$P7
+# plots_bball2$P8
+# plots_bball2$P9
+# plots_bball2$P10
+# plots_bball2$P11
+# plots_bball2$P12
+# plots_bball2$P13
+# plots_bball2$P14
+# plots_bball2$P15
+# plots_bball2$P16
+# plots_bball2$P17
+# plots_bball2$P18
+# plots_bball2$P19
+# plots_bball2$P20
+# plots_bball2$P21
+# plots_bball2$P22
+# plots_bball2$P23
+# plots_bball2$P24
+# plots_bball2$P25
+# plots_bball2$P26
+# plots_bball2$P27
+```
+
+## 5 Comparision of analysis for 100% data and randomly selected 30% of the data
+
+The task of just using 30% of the data randomly selected to make our analysis was very dufficult in this case. This is a very small dataset of just 30 obsevations about the baseball teams, and taking 30% of that means we had to work with just 9 observation(9 teams). It was dufficult to make any conclusive decisions looking at the plot. The reduced dataset had an equal distribution between the leagues(5 from AL and 4 from NL), which made it a litte easier. An unbalanced dataset would have been even more dufficult to analyse.
+
+In case of question two of this assignmnet where we had to do non-metric MDS on the data, the MDS worked pretty efficiently as there were fewer data points but it was dufficult to answer the question which MDS component is giving us a better split between the leagues. 
+
+The last question where we had to find the baseball statistic that had good correlation with the selected component was dufficult to answer. There were very few points and it was hard to conclude which of the statstic were better correlated with the component. 
+
+The analysis did not change much though with fewer data points. They both had almost the same statistics that had good correlation witht the component, but it was hard to choose among them for the best statistic. Statistics like AB, Runs, Hits, BAvg, RBI, OPS, TB etc are the once that had good positive/negative correlation with the selected component in both of them. So for this assignment, doing the analysis was dufficult when the data points were reduced.
+
+# Assignment 1 Lab 6 with 30% of data randomly selected
+
+## 1 Network Plot Degree 0
+
+30% of the nodes were randomly selected in this dataset and the corresponding links were kept in the links variable for making the network plot.
+
+The Bombing group and the Non Bombing groups are seperated by colors Red and Blue respectively. There are more people in the non bombing group. Since the nodes were randomly selected most of the nodes lost their connecting nodes and do not have any links. As the number of nodes are very few now, it is easier to visualize it. The two main nodes with the maximum connections belog to the bombing group and their names are "Mohamed Chaoui" and "Jamal Zougam".
+
+The clusters found in each of the groups are as follows -
+
+- In the bombing group the two main clusters found are originated at "Jamal Zougam" and "Mohamed Chaoui".There are also another smaller cluster "Jamal Ahmidan".
+
+- In the Non bombing group the main cluster found was originated at "Amer Azizi". There are some other smaller clusters in the Non bombing group. From the plot it looks like "Amer Azizi" and "Mohamed El Egipcio" had direct links to the bombing group.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+###Q1
+nodes<-read.table("trainMeta.dat")
+smp_size <- floor(0.30 * nrow(nodes))
+set.seed(12345)
+rand_ind <- sample(seq_len(nrow(nodes)), size = smp_size)
+nodes = nodes[rand_ind, ]
+colnames(nodes)<-c("label","group")
+nodes$id<-rownames(nodes)
+nodes<-nodes[,c(3,1,2)]
+nodes$title<-nodes$label
+nodes$color<-ifelse(nodes$group==1,"red","blue")
+nodes<-data.frame(nodes)
+
+all_links<-read.table("trainData.dat")
+temp_links =  all_links[all_links$V1 == nodes$id[1],]
+for(i in 2:length(nodes$id)){
+  temp = all_links[all_links$V1 == nodes$id[i],]
+  temp_links = rbind(temp_links, temp)
+}
+links =  temp_links[temp_links$V2 == nodes$id[1],]
+for(i in 2:length(nodes$id)){
+  temp = temp_links[temp_links$V2 == nodes$id[i],]
+  links = rbind(links, temp)
+}
+
+colnames(links)<-c("from","to","value")
+links<-data.frame(links)
+
+weight_nodes<-graph.data.frame(d=links,vertices=nodes,directed = F)
+degree_nodes<-degree(weight_nodes,mode="all")
+nodes$value<-degree_nodes[match(nodes$id,names(degree_nodes))]
+
+
+q1<-visNetwork(nodes,links)%>%visPhysics(solver="repulsion") %>%
+  visOptions(highlightNearest = list(enabled = T,degree=0,
+                                     hover = T),nodesIdSelection=TRUE,
+             selectedBy = "group") 
+
+q1
+```
+
+## 2 Network Plot Degree 1
+
+"Jamal Zougam" is the person with most number of connections in the network so he is the one who could spread information fastest.
+
+"Jamal Zougam" (born 1973 in Tangier) was one of six men implicated in the 2004 Madrid train bombings. He was detained on 13 March 2004, accused of multiple counts of murder, attempted murder, stealing a vehicle, belonging to a terrorist organisation and four counts of carrying out terrorist acts. Spain's El Pa's newspaper reported that three witnesses testified to seeing him leave a rucksack aboard one of the bombed trains.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+###Q2
+q2<-visNetwork(nodes,links)%>%visPhysics(solver="repulsion") %>%
+  visOptions(highlightNearest = list(enabled = T,degree=1,
+                                     hover = T),nodesIdSelection=TRUE,
+             selectedBy = "group")
+
+q2
+```
+
+## 3 Clusters by optimizing links
+
+Yes I think the cluster I found centered by "Jamal Zougam" is the one most easily spotted in this plot also. This helps us identify clusters easily.
+
+This plot makes it easy to spot clusters and makes it easy to interpret.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+###Q3
+nodes1<-nodes
+ceb<-cluster_edge_betweenness(weight_nodes)
+nodes1$group<-ceb$membership
+visNetwork(nodes1,links)%>%visIgraphLayout(layout = "layout_nicely")%>%
+  visOptions(highlightNearest = list(enabled = T,degree=1,
+                                     hover = T),nodesIdSelection=TRUE, selectedBy = "group") 
+```
+
+## 4 Heatmap for finding clusters
+
+Yes the main clusters identified using the reordered heatmap are the same spotted in the step 1 and 3. The two main clusters prominant in this plot are centered by "Jamal Zougam" and "Mohamed Chaoui". They had most number of connections with the Bombers and the Non bombers. Among the non bombers "Amer Azizi" is the one with a lot of connections with bombers and non-bombers.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+###Q4
+netm<-get.adjacency(weight_nodes,sparse = F)
+colnames(netm)<-nodes$label
+rownames(netm)<-nodes$label
+rowdist<-dist(netm)
+
+row_order<-seriate(rowdist,"HC")
+order1<-get_order(row_order)
+netm_reord<-netm[order1,order1]
+
+plot_ly(z=~netm_reord,x=~colnames(netm_reord),
+        y=~rownames(netm_reord),type="heatmap")%>% 
+  layout(title = " Madrid Bombing Heatmap for finding  clusters")
+```
+
+## 5 Comparision of analysis for 100% data and randomly selected 30% of the data
+
+It did not make much of a difference on reducing the data to 30%. The number of nodes and their corresponding connections were reduced by a lot but analysing the plots was not made dufficult because of the reduction. The accuracy of the conclusions made from the reduced data was hampered a lot because of the reduction. The nodes that had many connections still had some connections remaining but the nodes with few connections initially, if remained mostly had no connections. This is the reason there are a number of nodes without any connections.
+
+On taking a random subset of the data only five bomber nodes were left and out of them two did not have any connections. The two main bombers("Jamal Zougam", "Mohamed Chaoui") were still there in the subset and they remained to be the nodes with maximum number of connections who could spread information very fast among the group.
+
+There were a few non-bommber nodes in the subset but most of them did not have any connections or had very few connections. All these nodes were disconnected from the main cluster that involved the two main bombers, which could completely change our analysis about their involvement in the bombing. 
+
+Since the number of nodes were reduced the task of visualizing the nodes was easier but the accuracy of our analysis was hampered because of this. The nodes that seemed very involved in the bombing when we had 100% of the data were now left out as there was no connection between the main bombing cluster and them. 
+
+These are some of the main differences I found in the conclusions we made with the random subset of the data.
+
+# Apendix
+```{r, ref.label=knitr::all_labels(),echo=TRUE,eval=FALSE}
+```
