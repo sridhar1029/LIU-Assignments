@@ -1,0 +1,63 @@
+Data Set -4 Multi
+StartingTime spent training: 63.2887 sec
+Time spent classifying 1 feature vector: 7.7336e-07 sec
+Accuracy: 0.96679
+
+numHidden = 40; % Change this, Number of hidde neurons 
+numIterations = 1000; % Change this, Numner of iterations (Epochs)
+learningRate = 0.0001; % Learningrate
+
+a=-1;b=1
+W0=W0/10;
+V0=V0/10;	
+
+
+
+
+
+Data Set 1- Multi
+
+StartingTime spent training: 2.0175 sec
+Time spent classifying 1 feature vector: 1.5183e-07 sec
+Accuracy: 0.992
+numHidden = 3; % Change this, Number of hidde neurons 
+numIterations = 200; % Change this, Numner of iterations (Epochs)
+learningRate = 0.001; % Learningrate
+
+a=-1;b=1
+
+Single:
+
+numIterations = 1000; % Number of iterations (Epochs)
+learningRate = 0.002; % Learning rate
+accuracy =1
+
+
+Data Set 2- Multi
+
+
+StartingTime spent training: 3.3028 sec
+Time spent classifying 1 feature vector: 2.1084e-07 sec
+Accuracy: 1
+
+numHidden = 10; % Change this, Number of hidde neurons 
+numIterations = 300; % Change this, Numner of iterations (Epochs)
+learningRate = 0.0001; % Learningrate
+
+
+
+Dataset 3 - Multi
+StartingTime spent training: 7.5672 sec
+Time spent classifying 1 feature vector: 4.9254e-07 sec
+Accuracy: 0.998
+
+numHidden = 20; % Change this, Number of hidde neurons 
+numIterations = 600; % Change this, Numner of iterations (Epochs)
+learningRate = 0.0004; % Learningrate
+
+
+Non generalizable
+
+StartingTime spent training: 1.9726 sec
+Time spent classifying 1 feature vector: 4.6121e-07 sec
+Accuracy: 0.33333
