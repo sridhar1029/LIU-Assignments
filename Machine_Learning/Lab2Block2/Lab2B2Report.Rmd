@@ -1,0 +1,417 @@
+---
+title: "Lab2Block2"
+author: "Sridhar Adhikarla"
+date: "17 December 2018"
+output: 
+    pdf_document:
+      toc : true
+      toc_depth: 5
+---
+
+\newpage
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
+library(readxl)
+library(ggplot2)
+library(reshape2)
+library(mgcv)
+library(pamr)
+library(glmnet)
+library(kernlab)
+#library(IHW)
+library(FSA)
+```
+
+## Assignment 1: Using GAM and GLM to examine the mortality rates
+
+### Part 1: Relation between Influenza and Mortality
+
+```{r,1p1}
+#A1
+#1
+influenza = read_xlsx("Influenza.xlsx")
+#head(influenza)
+ggplot(influenza) + geom_line(aes(Time, Influenza), col = "red")
+ggplot(influenza) + geom_line(aes(Time, Mortality), col = "blue")
+#ggplot(influenza) + geom_line(aes(Time, Influenza, col="red")) + geom_line(aes(Time, Mortality, col="blue"))
+```
+
+The above plots clearly shows that the Influenza and Mortality are related as both have the peaks at the same time, though the scale is different. Every time there is a slight peaking in Influenza the Mortality also increases.
+
+### Part 2: Fitting GAM Model
+
+```{r,1p2}
+#Part 2
+model = gam(Mortality~Year+s(Week, k= length(unique(influenza$Week))), data = influenza, family = gaussian, method = "GCV.Cp")
+#plot(model, pages = 1, residuals = T)
+summary(model)
+```
+
+Underlying Probablistic Model:  $y = w_o + w_1x_1 + s(x_2) + e$
+
+Mortality : ${Mortality}\sim N(\mu,{\sigma}^2)$
+
+Epsilon : ${\epsilon}\sim N(0,{\sigma}^2)$
+
+Probilistic model: $Mortality = -680.589 + 1.233*Year + s(Week) + {\epsilon}$
+
+### Part 3: Analysis on GAM Model
+
+#### A) Plot of original and predicted Mortality
+
+```{r, 1p3a}
+# Part 3
+preds <- predict(model,influenza)
+results <- data.frame(Time=influenza$Time,
+                      Mortality=influenza$Mortality,
+                      Predicted=preds,
+                      Week=influenza$Week,
+                      Year=influenza$Year)
+ggplot(results)+
+  geom_line(aes(x=Time,y=Mortality,color="Original"))+
+  geom_line(aes(x=Time,y=Predicted,color="predicted"))+
+  ggtitle("Prediction of Mortality using GAM")
+```
+
+The model is a good approximation of the data but it is too smooth for the data. Rate of change in mortality is very high and we need to fit a more complex model to be able to capture that. The model is not able to capture the trend in mortality at the start but later it goes on to capture almost all the highs and lows. There are many points in the plot ie Mortalities 1700 and higher than 2200 are not captured by the model effectively. This is not the best model for this data, if we increase the complexcity of the model by introducing more spline functions of variables that are significant in the calculation of Mortality we could get a better model.
+
+#### B) Significant Terms in the model
+
+```{r,1p3b}
+summary(model)
+```
+
+A small p-value indicates that it is unlikely we will observe a relationship between the predictor and response  variables due to chance. Typically, a p-value of 5% or less is a good cut-off point. In our model, the p-values for week is close to zero but p-value of year is greater tha 0.05 which indicates the Year predictor as insignificant. This could be because in our model we asked GAM function to find a liner trend of mortality with year and we found that year is not linearly related to mortality when we ploted it. If we fit a spline function of Year may be we could get a better model and Year would be significant in it.
+
+#### C) Mortality Trend throughout the years
+
+```{r,1p3c}
+ggplot(results)+
+  geom_point(aes(x=Year,y=Mortality,color="Original"))+
+  ggtitle("Mortality Trend through year")
+```
+
+This plot shows the spread of Mortality across each week of each year. Each year has 51 points in them correnponding to the mortality value in those weeks in that year. As seen from the above plot, the range of Mortality values was low in initial years and then it kept increasing with the years. It had the largest range in the year 2000 and 2001. This trend cannot be captured by a linear realtion, this is the reason Year was marked as insignificant in the previous model. If we fit a spline function of Year also then the models performance might get better.
+
+#### D) Examining spline component
+
+```{r,1p3d}
+# Spline component
+plot.gam(model,residuals = TRUE)
+```
+
+This plot clearly shows that the rate of mortality is higher in the initial weeks of the year and then is low during the middle of the year and increases back again be the end of the year. We thing that this indicated the influenza rate increases during the winters due to the dry climate and this may be the reason for the highs during that period. It is high in the winters and goes down during summer.
+
+### Part 4: Examining penalty factor of spline function
+
+#### A) How Penalty Factor influence the deviance
+
+```{r,1p4a}
+model2 <- gam(Mortality~Year+s(Week, k=52, sp=model$sp),data=influenza,family = "gaussian")
+cat("\nAt Penalty Factor: ",model$sp," explained deviance is: ",model2$deviance)
+```
+
+This is the optimal penalty factor selected by our previous model and the corresponding deviance value. 
+
+#### B) Predicted and observed Mortality for cases of very high and very low penalty factor
+
+```{r,1p4b}
+modelL <-  gam(Mortality~Year+s(Week, k=52, sp=0),data=influenza,family = "gaussian")
+modelH <-  gam(Mortality~Year+s(Week, k=52, sp=100),data=influenza,family = "gaussian")
+
+predL <- predict(modelL,influenza)
+predH <- predict(modelH,influenza)
+
+results <- data.frame(Ind =influenza$Time,Original=influenza$Mortality,PredictedLow=predL,PredictedHigh=predH)
+
+ggplot(results)+
+  geom_point(aes(x=Ind,y=Original,color="Original"))+
+  geom_line(aes(x=Ind,y=PredictedLow,color="Low penalty"))+
+  geom_line(aes(x=Ind,y=PredictedHigh,color="High penalty"))+
+  xlab("Time")+
+  ggtitle("Predicted and observed Mortality for low and high penalty factor")
+```
+
+Passing in a very low value of penalty factor could result in a  overfitted model. As we can see the green line fit coresponding to the Low penalty factor(0) is too trying too much to capture all the points. It is not much evident in this case as we had a relatively simple formula in GAM with just one spline function of week. No penalty factor or very low penalty factor could result in an overfitted model.
+
+The red line corresponding to very high penalty factor(100) gives too smooth a function which underfits the data. Too high a penalty factor results in a very simple fit to the data which underfits the data. For a very high penalty factor as 100 we get a straight line fit to the data. 
+
+#### C) Relation between penalty factor and deviance
+
+```{r,1p4c}
+penFacs <- seq(0,10,0.1)
+getDev<- function(sp){
+  model <- gam(Mortality~Year+s(Week, k=52, sp=sp),data=influenza,family = "gaussian")
+  return(model$deviance)
+}
+devcs <- sapply(penFacs,getDev)
+results<-data.frame(PenaltyFactor=penFacs,Deviance=devcs)
+ggplot(results)+
+  geom_point(aes(x=PenaltyFactor,y=Deviance,color="Deviance"))+
+  ggtitle("Relation between penalty factor and deviance")
+```
+
+From above plot, we see that as the penalty factor increases the deviance increases. This is reasonable as, the increase in Penalty Factor means a simpler model is being fit to the data so that would increase the deviance as a simpler model wont be able to predict properly.
+
+#### D) Relation between penalty factor and degrees of freedom
+
+```{r,1p4d}
+q = seq(0,1,0.01)
+res = matrix(0, nrow = 0, ncol = 2)
+for( i in q){
+  model_i = gam(Mortality~Year+s(Week, k= length(unique(influenza$Week)), sp=i),
+                data = influenza, family = gaussian)
+  mdf = sum(model_i$edf)
+  res = rbind(res, c(i, mdf))
+}
+res = as.data.frame(res)
+colnames(res) = c("PenaltyFactor", "DOF")
+ggplot(res)+
+  geom_line(aes(x=PenaltyFactor,y=DOF,color="Degrees of Freedom"))+
+  ggtitle("Relation between penalty factor and Degrees of Freedom")
+
+```
+ 
+ On the other hand the increase in penalty factor decreases the degrees of freedom of the model. This is also a reasonable thing as, the increase in penalty means a simple model being fit to the data and a simple model will have low degrees of freedom.
+
+### Part 5: Examining relation between Influenza and GAM Residuals
+
+```{r,1p5}
+# Part 5
+results <- data.frame(Ind=influenza$Time,Original=influenza$Influenza,Residuals=as.data.frame(model$residuals))
+colnames(results)[3] <-c("Residuals")
+ggplot(results)+
+  geom_point(aes(x=Ind,y=Original,color="Influenza"))+
+  geom_line(aes(x=Ind,y=Residuals,color="Residuals"))
+```
+
+From above plot, it is eveident that there is a correlation between Influenza and Residuals, whenvever there is a increase in influenza case there is a increase in the residuals. This is because the prediction we got from our model was not able to capture all the peaks in the mortality, so the corresponding residuals at the point is high. This is the reason the residuals and Influenza are correlated. The residuals are very noisy but whenever there is a increase in the influenza the corresponding residual value also increases.
+
+### Part 6: GAM model in R in which mortality is be modelled as an additive function of the spline functions of year, week, and the number of confirmed Influenza cases.
+
+#### A) Examining the updated model
+
+```{r,1p6a}
+# Part 6
+allYears <- length(unique(influenza$Year))
+allWeeks <- length(unique(influenza$Week))
+allInf <- length(unique(influenza$Influenza))
+
+modelFinal <-gam(Mortality~s(Year,k=allYears)
+                 +s(Week,k=allWeeks)
+                 +s(Influenza,k=allInf),data=influenza,
+                   family = "gaussian",method="GCV.Cp")
+summary(modelFinal)
+```
+
+A small p-value indicates that it is unlikely we will observe a relationship between the predictor and response  variables due to chance.
+From above results, wee see that there is significant relationship between Mortality and Influenza. Influenza also has higher degrees of freedom which indicates that it has a complex significant relationship with Mortality in the fit.
+
+#### B) Plot of predicted and observed Mortality using the updated model
+
+```{r,1p6b}
+preds <- predict(modelFinal,influenza)
+
+results <- data.frame(Ind=influenza$Time,Original=influenza$Mortality,Predicted=preds)
+ggplot(results)+
+  geom_point(aes(x=Ind,y=Original,color="Original"))+
+  geom_line(aes(x=Ind,y=Predicted,color="Predicted"))
+```
+
+It looks like the prediction accuracy has increased in the updated model, as it now covers the peaks much better as compared to the older model, thus we can say there is significant relation between Mortality and Influenza.
+
+#### C) Influence of Week, Year and Influenza on Mortality
+
+```{r,1p6b2}
+par(mfrow=c(2,2))
+plot.gam(modelFinal)
+```
+As we can see from above plots, the Mortality is not effected by Year, somwhat effected by Week but has highly significant relation with Influenza outbreak.
+
+
+## Assignment 2: High-dimensional methods
+
+### Part 1: Nearest Shrunken Centroid Classification
+
+#### A) Fitting nearest shrunken centroid model using pamr package
+
+```{r,2p1a, fig.height=9}
+#Part1
+set.seed(12345)
+data <- read.csv("data.csv",sep = ";",check.names = FALSE ,encoding = "latin1")
+data$Conference <- as.factor(data$Conference)
+
+n=dim(data)[1]
+id=sample(1:n, floor(n*0.70))
+train=data[id,]
+test=data[-id,]
+cat("Train dimension: ",dim(train),"\nTest dimension: ",dim(test))
+
+#Organize data
+rownames(train) <- 1:nrow(train)
+trainx <- t(as.matrix(train[,-4703]))
+trainy <- as.matrix(train[,4703])
+
+newTrain <- list(x=trainx,y=trainy,geneid=as.character(1:nrow(trainx)),genenames=rownames(trainx))
+
+# fit model
+model1 <- pamr.train(newTrain)
+
+## CV model
+model.cv <- pamr.cv(model1,newTrain,nfold = 10)
+
+#plot of cv
+pamr.plotcv(model.cv)
+
+```
+
+```{r}
+
+minThresh <- model.cv$threshold[which.min(model.cv$error)]
+
+#Minimum Error Model
+model2 <- pamr.train(newTrain, threshold = minThresh)
+
+# Centroid Plot
+pamr.plotcen(model1, newTrain, threshold =minThresh)
+```
+
+The plot above represents the features that have significant relation with the target variable. In the plot, 1 represents announcements of conference and 0 represents evverything else. It is eveident from the plot, that half of the features in upper section are more important for this classification and the features in the lower half do not contribute much.
+
+#### B) Feature selected
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+featSelected <- pamr.listgenes(model1, newTrain, threshold = minThresh, genenames=TRUE)
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#Total features selected
+cat("\nTotal Features Selected: ",dim(featSelected)[1])
+
+# Most contributing features (Top 10)
+topFeat <- featSelected[1:10,"name"]
+cat("\n10 Most contributing features are: \n",topFeat)
+```
+
+#### C) Is it reasonable to that feature selected have strong effect on target?
+
+```{r,2p1c}
+print(featSelected[1:10,2:4])
+```
+
+Above are the top 10 most significant features along with score for 0 (Everything else) and 1 (Conference announcement)
+As we can see the name column, there is very high probability that every conference announcement email having these words. So it is reasonable to believe that these features contribute the most to classify the target variable.
+
+#### D) Test Error
+
+```{r,2p1d}
+#Test error
+print("Performance on Test set: ")
+testx <- t(as.matrix(test[,-4703]))
+testy <- as.matrix(test[,4703])
+
+preds <- pamr.predict(model1,newx=testx,threshold = minThresh,type="class")
+
+confMat <- table(testy,preds)
+print(confMat)
+misRate1 <- 1- sum(diag(confMat))/sum(confMat)
+cat("\nMisclassification rate on test: ",misRate1)
+```
+
+### Part 2: Computing test error using Elastic Net and SVM
+
+#### A) Elastic Net 
+
+##### 1) Training Elastic Net using glmnet package
+
+```{r,2p2a1}
+#Part 2
+set.seed(12345)
+
+trainx <- as.matrix(train[,-4703])
+trainy <- as.matrix(train$Conference)
+
+model2 <- glmnet(x=trainx,y=trainy,family = "binomial",alpha = 0.5)
+
+#model.cv <- cv.glmnet(model)
+model.cv <- cv.glmnet(x=trainx,y=trainy,family = "binomial",alpha = 0.5)
+plot(model.cv)
+```
+
+lambda.min is the value of $\lambda$ that gives minimum mean cross-validated error. The other $\lambda$  saved is lambda.1se, which gives the most regularized model such that error is within one standard deviation of the minimum. We are going to use lambda.min in further steps.
+
+##### 2) Test Elastic Net
+
+```{r,2p2a2}
+# test Elastic Net
+set.seed(12345)
+testx <- as.matrix(test[,-4703])
+testy <- as.matrix(test$Conference)
+preds <- predict(model2,testx,s = model.cv$lambda.min, type="class")
+
+confMat <- table(testy,preds)
+print(confMat)
+misRate2 <- 1- sum(diag(confMat))/sum(confMat)
+cat("\nMisclassification rate on test Using GLMNET: ",misRate2)
+cat("\nNumber of features selected: ",dim(coef(model2))[2])
+```
+
+#### B) Support Vector Machine Using Kernel Vannilldot
+
+##### 1) Training support vector machine using kernlab package
+
+```{r,2pb1}
+set.seed(12345)
+model3 <- ksvm(Conference~.,data=train,kernel="vanilladot",scaled=FALSE)
+print(model3)
+```
+
+##### 2) Test SVM
+
+```{r,2pb2}
+preds <- predict(model3,test,type="response")
+confMat <- table(Actual=test$Conference,Predicted=preds)
+print(confMat)
+misRate3 <- 1- sum(diag(confMat))/sum(confMat)
+cat("\nMisclassification rate on test Using SVM with Vanilladot Kernel: ",misRate3)
+cat("\nNumber of feature selected: ",length(model3@coef[[1]]))
+```
+
+#### C) Comparison between all models
+
+```{r,2pc, echo=FALSE, message=FALSE, warning=FALSE}
+misRates <-c(misRate1,misRate2,misRate3)
+models <- c("Nearest Shrunken Centroid","Elastic Net","Support Vector Machine")
+featuresSelected <- c(length(topFeat),dim(coef(model2))[2],length(model3@coef[[1]]))
+results <- data.frame(Model=models,MisClassificationRates=misRates,FeaturesSelected=featuresSelected)
+print(results)
+```
+
+As seen from the above results, the misclassification rate for Support Vector Machine with Vanilladot Kernel is the least among all the models. Therefore, the optimal model to fit this data is SVM.
+
+### Part 3: Implementing Benjamini-Hochberg method
+
+```{r,2p3, echo=FALSE, message=FALSE, warning=FALSE}
+p_value <- c()
+for (i in 1:4702){
+  x <- data[,i]
+  p_value[i] <- t.test(x ~ Conference, data = data, alternative = "two.sided")$p.value
+}
+p_value <- as.data.frame(p_value)
+p_value$reject_flag <- as.factor(ifelse(p_value$p_value <0.05, "Retain", "Drop"))
+p_value$column_index <- row.names(p_value)
+keep <- na.omit(ifelse(p_value$reject_flag == "Retain", as.numeric(p_value$column_index), NA))
+colnames(data[,keep])
+cat("Total Features Selected are : ", length(keep), "\n")
+```
+
+The above features are the ones that were retained be the hypothesis and have significant relation with the conference announcement.
+
+### Appendix
+```{r , ref.label=knitr::all_labels(),echo=TRUE,eval=FALSE}
+```
