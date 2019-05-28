@@ -1,0 +1,143 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+
+
+\newpage
+```{r , include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	eval=TRUE,
+	message = FALSE,
+	warning = FALSE,
+	comment = NA
+)
+
+```
+
+# Gibbs Sampling
+
+## Read Data and Plot X vs Y
+
+```{r, echo =FALSE}
+library(ggplot2)
+#1
+load("chemical.RData")
+ggplot() + geom_point(aes(X, Y), col="blue")
+```
+
+We think a polynomial regression would be a good fit to the data. A curve would perfecly catch the dependence between X and Y.
+
+## Calculate Likelyhood and prior
+
+Given :
+$$
+\begin{aligned}
+Y_{i} &\sim  \mathcal{N}(\mu_{i},\sigma^2=0.2) \\
+p(\mu_{1}) &= 1 \\
+p(\mu_{i+1}|\mu_{i})&\sim  \mathcal{N}(\mu_{i},0.2),\ i= 1,2,3...,n-1
+\end{aligned}
+$$
+Where prior is $p(\mu_{1})$ and $p(\mu_{i+1}|\mu_{i})$ . We can use chain rule to calculate the prior as shown below.
+
+$$
+\begin{aligned}
+p(\mu) &= p(\mu_{1}).p(\mu_{2}|\mu_{1}).p(\mu_{3}|\mu_{2})...p(\mu_{n}|\mu_{n-1}) \\
+p(\mu) &= k.e^{-\frac{1}{2.\sigma^2}.\sum_{i=1}^{n-1} (\mu_{i+1}-\mu{i})^2}
+\end{aligned}
+$$
+Each of $Y_i$ is dependent on $\mu_i$ hence we can calculate likelyhood $P(Y|\mu)$ as :
+$$
+\begin{aligned}
+p(Y|\vec{\mu}) &=p(Y_1|\vec{\mu_1}).p(Y_2|\vec{\mu_2}).p(Y_3|\vec{\mu_3})...p(Y_n|\vec{\mu_n}) \\
+p(Y|\vec{\mu}) &= \prod_{i=1}^{n} p(Y_i|\vec{\mu_i}) \\
+p(Y|\vec{\mu}) &= k.e^{-\frac{1}{2.\sigma^2}.\sum_{i=1}^{n} (Y_{i}-\mu{i})^2}
+\end{aligned}
+$$
+
+
+## Calculating posterior and conditional distributions.
+We know the posterior formula as:
+
+
+$$
+P(\mu|Y) \propto P(Y|\mu).P(\mu)
+$$
+Using the derived likelyhood, prior as calculated before, we can use it in this equation to get posterior as :
+
+$$
+\begin{aligned}
+P(\mu|Y) &\propto k.e^{-\frac{1}{2.\sigma^2}.\sum_{i=1}^{n} (Y_{i}-\mu{i})^2} .e^{-\frac{1}{2.\sigma^2}.\sum_{i=1}^{n-1} (\mu_{i+1}-\mu{i})^2} \\
+P(\mu|Y) &\propto e^{-\frac{1}{2.\sigma^2}(\sum_{i=1}^{n} (Y_{i}-\mu{i})^2 + \sum_{i=1}^{n-1} (\mu_{i+1}-\mu{i})^2)}  \\
+\end{aligned}
+$$
+But for each $\mu$ we need to get a conditional distribution where $\mu_i$  is dependent on $\mu_{-i}$. Using Hint A, B and C we can get conditional distribution as:
+
+$$
+\begin{aligned}
+P(\mu_1|\mu_{-1},Y)&= e^{-\frac{1}{2.\sigma^2}(\mu_1-(\frac{\mu_2+y_1}{2}))^2}\\
+P(\mu_i|\mu_{-i},Y))&= e^{-\frac{1}{2.\sigma^2}(\mu_i-(\frac{\mu_{i-1}+\mu_{i+1}+y_n}{3}))^2} \\
+P(\mu_n|\mu_{-n},Y))&= e^{-\frac{1}{2.\sigma^2}(\mu_n-(\frac{\mu_{n-1}+y_n}{2}))^2}
+\end{aligned}
+$$
+<br>
+Each of the above distribution is normally distributed with below properties :
+$$ 
+\begin{aligned}
+\mu_1 &\sim \mathcal{N}(\frac{\mu_2+Y_1}{2},\sigma^2=0.2) \\
+\mu_i &\sim \mathcal{N}(\frac{\mu_{i-1}+\mu{i+1}+Y_i}{3},\sigma^2=0.2) \\
+\mu_n &\sim \mathcal{N}(\frac{\mu_{n-1}+Y_n}{2},\sigma^2=0.2)
+\end{aligned}
+$$
+The $\mu$ are found out by running multiple iterations. 
+
+
+## Gibbs Sampler
+```{r, echo =FALSE}
+#4
+f.MCMC.Gibbs<-function(nstep, Y){
+  n = length(Y)
+  mu = matrix(0, nrow = nstep, ncol = n)
+  mu[1, ] = rep(0,n)
+  for (i in 2:nstep){
+    last_mu = mu[i-1, ]
+    new_mu = mu[i, ]
+    for(j in 1:n){
+      mu_new = ifelse(j==1, (Y[1] + last_mu[2])*0.5, 
+                      ifelse(j==n, (Y[n] + new_mu[n-1])*0.5,
+                             (Y[j]+new_mu[j-1]+last_mu[j+1])/3 ))
+      var_new = ifelse(i==1, 0.2/2,
+                       ifelse(i==n, 0.2/2,
+                              0.2/3))
+      new_mu[j] = rnorm(1, mu_new, sqrt(var_new))
+    }
+    mu[i, ] = new_mu
+  }
+  return(mu)
+}
+
+mus = f.MCMC.Gibbs(nstep = 1000, Y)
+mu_avg = colSums(mus)/1000
+ggplot() + geom_point(aes(X, Y), colour="blue") + geom_line(aes(X, mu_avg), colour="red") +ggtitle(expression(paste("Dependence of " ,mu, " and Y on X")))
+```
+The red line shows the trace of expected $\mu$ value and blue line is the dependence of Y on X. From the graph,yes it looks like the line fits the data quite well removing much of the noise.
+I think the expected value of mu catches the underlying dependence between X and Y. 
+
+
+## Trace Plot
+
+```{r, echo =FALSE}
+#5 Trace plot
+Iter = 1:1000
+MU_N = mus[,50]
+ggplot() + geom_line(aes(Iter, MU_N)) + 
+    ylab(expression(mu[50])) +
+    xlab("Iterations") +
+    ggtitle(expression(paste("Trace Plot of ", mu[50])))
+```
+
+The mu value gets close to the actual distribution of Y after the first iteration. For $\mu_n$ the update in the first iteration ends up being the average of $Y_n$ and $\mu_{n-1}$(which is close to the average of the previous two points of Y), so the $\mu_n$ for the first iteration ends up being close to the average of the points $Y_i$ and $Y_{i-1}$. So the burn in period would be just one iteration. 
+
+The value of mu keeps fluctuating. Since we are generating a random number using rnorm with a small standard deviation in each iteration, the value of $\mu$ stays close to the average of the points $Y_n$ and $Y_{n-1}$. 

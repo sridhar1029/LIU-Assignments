@@ -1,0 +1,161 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+
+\newpage
+```{r , include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	eval=TRUE,
+	message = FALSE,
+	warning = FALSE,
+	comment = NA
+)
+
+```
+
+# Assignment 1
+
+## Reading Data
+
+```{r}
+library(ggplot2)
+#Ass 1
+#Q1
+mortRate = read.csv("mortality_rate.csv", sep=';', dec = ',')
+mortRate$LMR = log(mortRate$Rate)
+head(mortRate)
+
+n = dim(mortRate)[1]
+set.seed(123456)
+id = sample(1:n, floor(n*0.5))
+train = mortRate[id,]
+test = mortRate[-id,]
+```
+
+Reading Data into variable mortRate and adding log of the rate column to the data frame.
+
+## Created My_MSE function
+
+```{r}
+#Q2
+my_MSE = function(lambda, pars, iterCounter=FALSE){
+  model = loess(pars$Y~pars$X, enp.target = lambda)
+  fYpred = predict(model, newdata = pars$Xtest)
+  n_test = length(pars$Ytest)
+  predictiveMSE = sum((pars$Ytest - fYpred)^2)/n_test
+  if(iterCounter){
+    if(!exists("iterForMyMSE")){
+      assign("iterForMyMSE",
+             value = 1,
+             globalenv())
+    } else {
+      currentNr <- get("iterForMyMSE")
+      assign("iterForMyMSE",
+             value = currentNr + 1,
+             globalenv())
+    }
+  }
+  return(predictiveMSE)
+}
+
+```
+
+## Using the Function Created for different values of lambda.
+
+```{r}
+
+#Q3
+lambda = seq(0.1,40,by=0.1)
+pars = list()
+pars$X = train[, 1]
+pars$Y = train[, 3]
+pars$Xtest = test[, 1]
+pars$Ytest = test[, 3]
+
+predMSE = matrix(0, ncol = 1, nrow = length(lambda))
+counts = matrix(0, ncol = 1, nrow = length(lambda))
+for(i in 1:length(lambda)){
+  iterForMyMSE = 0
+  predMSE[i] = my_MSE(lambda[i], pars, TRUE)
+  counts[i] = iterForMyMSE
+}
+
+min_lbd = lambda[which.min(predMSE)]
+min_mse = min(predMSE)
+
+ggplot() + geom_line(aes(lambda, predMSE)) + geom_point(aes(min_lbd, min_mse), col='red')
+
+cat(paste("The minimun value of MSE found by the irerative method is : ", min_mse, "\nThe corresponding value of lambda at which this minimum was found is : ", min_lbd, "\n"))
+
+```
+
+The minimum found by the iterative method is shown on the plot with a red point.
+
+## Using the My_MSE to find minimum iteratively with a threshold 
+
+```{r}
+#Q4
+bestMSE = -100
+newMSE = -1
+counts = 0
+thresh = 0.01
+bestThresh = 0
+for(i in 1:length(lambda)){
+  newMSE = my_MSE(lambda[i], pars, TRUE)
+  counts = i
+  if(bestMSE == -100){
+    bestMSE = newMSE
+    bestThresh = counts
+  }else if(bestMSE > newMSE){
+    bestMSE = newMSE
+    bestThresh = counts
+  }else{
+    diffMSE = newMSE - bestMSE
+    if(diffMSE>thresh){
+      break
+    }
+  }
+}
+
+ggplot() + geom_line(aes(lambda, predMSE)) + geom_point(aes(min_lbd, min_mse), col='red') + geom_point(aes(lambda[bestThresh], bestMSE), col='green')
+
+cat(paste("The minimun value of MSE found by the irerative method is : ", bestMSE, "\nThe corresponding value of lambda at which this minimum was found is : ", lambda[bestThresh], "\nThe method had tolarence value of 0 and it took ", counts, " steps to converge."))
+```
+
+We use the counts to keep count of the number of times the function has been called. The function MyMSE was called 245 times until convergence, using the tolarence value of (0.01). The loop stops as soon as we get a increment in the MSE value greater than the tolarence value. The step size we are taking is very small 0.1, this is the reason it took 245 steps to converge.
+
+The min value of MSE and the corresponding lambda found in this way is exactly the same to the actual minimum. This is the reason the points overlap in the plot.
+
+## Using Optimize with threshold on Accuracy : 0.01
+
+```{r}
+iterForMyMSE = 0
+val = optimise(my_MSE, interval = lambda, pars=pars, iterCounter=TRUE, tol = 0.01)
+cat(paste("Number of function calls taken for the optimize function to  find minimum : ", iterForMyMSE, "\n"))
+cat(paste("The minimum found by the optimize function : \n"))
+cat(paste("MIN MSE : ", val$objective, "\nLAMBDA  : ", val$minimum, "\n"))
+
+```
+
+The function takes fewer steps to converge when we introduce a threshold value on accuracy. With the threshold(0.01) in the iterative method it took 245 steps and with the threshold(0.01) using optimize it took just 18 steps to converge. I think the function optimize takes a larger step that lets it get to the min value faster, it is not considering all the intervals we provided it with. This is the reason the min value found by this function is not the global minimum, it is close to it, but not the exact minimum.
+
+The minimum found in the previous case was the actual minimum and in this case the algorithm was forced to declare convergence as the threshold value of accuracy was satisfied.
+
+## Using optim()function and BFGS to find lambda value.
+
+```{r}
+#Q5
+iterForMyMSE = 0
+val = optim(35, fn=my_MSE, pars=pars, iterCounter=TRUE, method="BFGS")
+cat(paste("Number of function calls taken for the optimize function to  find minimum : ", iterForMyMSE, "\n"))
+cat(paste("The minimum found by the optimize function : \n"))
+cat(paste("MIN MSE : ", val$value, "\nLAMBDA  : ", val$par, "\n"))
+cat(paste("Number of Iterations : ", iterForMyMSE, "\n"))
+```
+
+The initialization point we set for the algorithm was 35, there is a steep downhill at that point, so the algorithm takes that step, but then the function is plateaued towards the lower bound from that point and has a peak as lambda value increase from that point. This is the reason the algorithm declares convergence at the local optima, and takes just three steps to declare convergence.
+
+This function depends heavily on the initial point we specify as the start. If our initialization is bad the function will get stuck at a local optima. The previous optimize funcion took in a list of values to search over and find the minimum, this is the reason the convergence found by the previous function was better.

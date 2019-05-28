@@ -1,0 +1,142 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+
+\newpage
+```{r, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	eval=TRUE,
+	message = FALSE,
+	warning = FALSE,
+	comment = NA
+)
+
+```
+
+```{r, echo =FALSE}
+#libraries
+library(ggplot2) #To do Gelman-Rubin test
+library(boot)
+library(readxl)
+set.seed(12345)
+```
+
+# Hypothesis testing
+
+## Scatterplot of Y versus X
+
+```{r, echo=FALSE}
+lottery_data = read_xls("lottery.xls")
+lot_data = data.frame("X"=lottery_data$Day_of_year, "Y"=lottery_data$Draft_No)
+#1
+ggplot(lot_data) + geom_point(aes(X, Y))
+```
+
+The data looks randomly distributed from this plot.
+
+## Estimate $\hat{Y}$
+
+```{r, echo=FALSE}
+#2
+loessMod <- loess(Y ~ X, data=lot_data)
+smoothed <- predict(loessMod)
+
+ggplot() + geom_point(aes(lot_data$X, lot_data$Y)) + 
+  geom_line(aes(lot_data$X, smoothed), col="red", size=1) 
+```
+
+The smoothed line is not able to fit the data, this again indicates that the data is randomly distributed.
+
+## Test statistics to check if the lottery is random
+
+```{r, echo=FALSE}
+#3
+BootstrapT_Test = function(data_boot=lot_data, id){
+  data_boot$boot_X = data_boot$X[id]
+  data_boot$boot_Y = data_boot$Y[id]
+  loessMod_boot <- loess(boot_Y ~ boot_X, data=data_boot)
+  smoothed_boot <- predict(loessMod_boot)
+  
+  Xb = data_boot$boot_X[which.max(data_boot$boot_Y)]
+  Xa = data_boot$boot_X[which.min(data_boot$boot_Y)]
+  Ycap_Xb = smoothed_boot[Xb]
+  Ycap_Xa = smoothed_boot[Xa]
+  t_val = (Ycap_Xb - Ycap_Xa)/(Xb-Xa)
+  return(t_val)
+}
+N = 2000
+boot.out = boot(lot_data, BootstrapT_Test, N)
+
+cat("The value of T-Test for the original dataset is :", boot.out$t0)
+```
+
+```{r, echo=FALSE}
+plot(boot.out)
+hist(boot.out$t, breaks = 100)
+cat("T is normally distributed with mean value, ", mean(boot.out$t), " and standard deviation, ", sd(boot.out$t))
+```
+
+T looks normally distributed to me, with mean centered close to zero. The QQ plot also indicates that T is normally distributed as most of the values are close to the line.
+
+This again indicates that the data was randomly distributed, as the mean value of T sampled 2000 times is also not significantly greater than 0.
+
+```{r, echo=FALSE}
+print(boot.ci(boot.out, type = "norm"))
+```
+
+Since the 95% confidence interval is not significantly greater than 0, we can still say that the data is randomly distributed.
+
+```{r, echo=FALSE}
+cat("P-value : ", pnorm(0, mean = mean(boot.out$t), sd = sd(boot.out$t)))
+```
+
+In this case:
+$H_0$ -> T statistic is not significantly greater than 0. (null Hypothesis)
+$H_a$ -> T statistic is significantly greater than 0. (alternative Hypothesis)
+
+I am calculating the P-value with respect to 0, as this is the point that determines if our null Hypothesis (data is randomly distributed) is accepted or rejected. If the T value is significantly greater than 0 then the data is not random and null Hypothesis is rejected. So the probability that the T value of a random sample from the data will be smaller than zero is calculated here.
+
+## Implement a function depending on data and B that tests the hypothesis
+
+```{r, echo=FALSE}
+#permutation test
+permTest = function(boot_var){
+  n = length(boot_var$t)
+  new_diff = abs(boot_var$t) - abs(boot_var$t0)
+  sum(new_diff>0)/n
+}
+N = 2000
+boot.out_perm = boot(lot_data, BootstrapT_Test, N)
+cat("P-value using Permutation Test : ", permTest(boot.out_perm))
+
+```
+
+Since P value calculated above is not significant (> than 0.05) hence we failed to reject the null hypothesis which implies that lottery is random.
+
+## Crude estimate of the power of the test constructed
+
+```{r, echo=FALSE}
+#5
+non_rand_data = lot_data
+alphas_nr = seq(0.1, 10, 0.1)
+beta_non_rand = rnorm(1, mean = 183, sd = 10)
+p_vals_nr = matrix(0, nrow = length(alphas_nr), ncol = 2)
+p_vals_nr[,1] = alphas_nr
+for(j in 1:length(alphas_nr)){
+  alpha_non_rand = alphas_nr[j]
+  for(i in 1:366){
+    non_rand_data$Y[i] = max(0, min(alpha_non_rand*i + beta_non_rand, 366)) 
+  }
+  N = 200
+  boot.out_nr = boot(non_rand_data, BootstrapT_Test, N)
+  p_vals_nr[j, 2] = permTest(boot.out_nr)
+}
+hist(p_vals_nr[,2])
+```
+
+This is the frequency plot showing the P-value's we got for different alpha values(0.1, 0.2, 0.3, .....10).
+
+As we can see from the histogram, the maximum p-value we got from this non-random data is significant, so we can reject the null hypothesis for all the alpha values. This is what was expected and this proovs that the test is a good test to check if a random variable is from a random distribution or not.

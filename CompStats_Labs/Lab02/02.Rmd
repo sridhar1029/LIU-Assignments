@@ -1,0 +1,136 @@
+\newpage
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	eval=TRUE,
+	message = FALSE,
+	warning = FALSE,
+	comment = NA
+)
+
+```
+
+
+# Maximum Likelyhood
+
+##Log likelyhood and deriving maximum likelyhood estimator
+
+$$log(x_{1},x_{2}...x_{100}|\mu,\sigma) = 
+    -\frac{1}{2*\sigma^2}*\sum_{i=1}^{100} (x_i-\mu)^2 - \frac{100}{2}(log2\pi\sigma^2)
+$$
+
+Let P = $log(x_{1},x_{2}...x_{100}|\mu,\sigma)$
+
+
+$$
+\begin{aligned} 
+  \frac{\partial P}{\partial \mu} &= \frac{1}{\sigma^2}*\sum_{i=1}^{100} (x_i-\mu) \\ 
+  \frac{\partial P}{\partial \sigma} &= \frac{\sum_{i=1}^{100} (x_i-\mu)^2}{\sigma^3} -       \frac{100}{\sigma}
+\end{aligned}
+$$
+<br>
+
+We can maximize the estimator $\mu$ and $\sigma$ by equating both the above
+derivative to zero and solving it.   .
+<br>
+
+ $$ \begin{aligned}
+ \mu &= \frac{\sum_{i=1}^{100} (x_i)}{100} \\
+ \sigma^2 &= \frac{\sum_{i=1}^{100} (x_i-\mu)^2}{100}
+ \end{aligned}
+ $$
+```{r,echo=FALSE}
+library(dplyr)
+compare_data <- matrix(ncol=4,nrow=0)
+colnames(compare_data) <- c("Mean","Sigma","Count_function_eval","Count_gradient_eval")
+
+load("data.RData")
+mu <- round(sum(data)/length(data),2)
+sigma <- round(sqrt(sum((data-mu)^2)/length(data)),2)
+
+cat("\nBelow parameters estimates the normal distribution from where the sample is taken: \n\n")
+cat("\nMean(mu):",mu)
+cat("Sigma:",sigma)
+
+compare_data <- rbind(compare_data,c(mu,sigma,"-","-"))
+```
+
+
+## Optimizing the minus log likelihood function
+**Below is the minus log likelhood function**
+
+$$P = 
+    \frac{1}{2*\sigma^2}*\sum_{i=1}^{100} (x_i-\mu)^2 + \frac{100}{2}(log2\pi\sigma^2)
+$$
+<br>
+
+**Why it is a bad idea to maximize likelihood rather than maximizing log likelihood?**
+
+Likelyhood terms are multiplicative and most of the distribution for whose finding
+the parameter is of keen interest includes exponential terms. Maximizing the likelyhood by 
+finding a derivative and equating to zero would require cumbersome mathematics and is often computationally expensive because the right hand side of the equation contains lot of 
+multiplicative and exponential term. Since log is monotonically increasing function,
+the parameter that maximizes the log of a function would be same as the one that maximizes
+the likelyhood. Log tranforms the multiplicative terms into addition terms and exponential
+term into multiplicative term which is less computationally intensive. Moreover the log reduces
+the number in interest and computer work much better with smaller numbers thereby reducing the 
+precision error as well.
+```{r, echo=TRUE}
+#Minus log likelyhood
+minusloglikely <- function(par) {
+    mu <- par[1]
+    sigma <- par[2]
+    1/((2*sigma^2))*sum((data-mu)^2)+(length(data)/2)*(log(2*pi*sigma^2))
+}
+
+#gradient function calculates gradient for mu and sigma which is basically
+#negative of dP/d(mu) and dp/d(sigma)
+gradient_func <- function(par) {
+    mu <- par[1]
+    sig <- par[2]
+    grad_mu <- - (sum(data-mu))/sig^2 
+    grad_sig <- (length(data)/sig) - sum((data-mu)^2)/sig^3
+    
+    return(c(grad_mu,grad_sig))
+}
+
+#Optimizing negative log likelyhood using conjugate gradient and BFGS method
+#with and without gradient
+
+optimum_val <- mapply(FUN=function(first_arg,second_arg) {
+    r = optim(par=c(0,1),fn = minusloglikely,
+                         gr=first_arg,
+                         method = second_arg) 
+    
+                   data.frame("mu"= round(r$par[1],2),
+                               "sigma" = round(r$par[2],2),
+                               "Function_Counts" = r$counts[1],
+                               "Gradient_Counts" = r$counts[2])
+                  },
+    
+                  second_arg = list("BFGS","BFGS","CG","CG"),
+                  first_arg = list(NULL,gradient_func,NULL,gradient_func),
+                  SIMPLIFY = TRUE,USE.NAMES = TRUE)
+
+
+colnames(optimum_val) = c("BFGS(NULL_Gradient)", "BFGS", 
+                          "CG(NULL Gradient)", "CG")
+
+optimum_val <- as.data.frame(optimum_val)
+```
+
+
+
+## Analysis
+
+```{r, echo=FALSE}
+knitr::kable(optimum_val,align = 'c',"latex",
+             caption ="Analysis of various optimizing algorithm") %>% 
+    kableExtra::kable_styling(latex_options = "hold_position")
+```
+Maximizing log likelyhood,conjugate gradient and BFGS, converges the mean and sigma
+estimators for the data to same value to 2 decimal precision. We did employ with and
+without gradient for BFGS and CG. From the above table, it seems that BFGS without
+gradient function take least iteration of minuslikelyhood fuction to evaluate the same
+value of mu and sigma.
+

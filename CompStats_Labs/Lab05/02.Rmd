@@ -1,0 +1,154 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+
+
+\newpage
+```{r , include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	eval=TRUE,
+	message = FALSE,
+	warning = FALSE,
+	comment = NA
+)
+
+library(boot)
+```
+
+
+#Bootstrap, jackknife and confidence intervals
+
+##Histogram of Price
+
+```{r,echo=FALSE}
+prices1 <- read.csv2("prices1.csv")
+n <- nrow(prices1)
+samp_mean <- sum(prices1$Price)/n
+cat("\n\nMean price is:",samp_mean)
+```
+
+From the distribution of histogram, it looks like gamma distribution
+
+```{r}
+hist(prices1$Price, main = "Histogram of prices", xlab="Prices")
+```
+
+
+##Bootstrap to estimate the parameter
+The histogram plot of mean using non paramteric boot sample seems to be normal distribution according to central limit theorem.
+Bias corrected estimator is :
+$$
+T = 2T(D)- \frac{1}{B}*\sum_{i=1}^{B} T_i^*
+$$
+where $T_i*$ is the mean of each bootstrap sample and T(D) is mean of actual data. After bias correction mean calculated by botostrap is nearly same to our true mean of the prices. With increase in bootstrap, the estimator, after bias correction, will come more closer to the actual value.
+
+```{r,echo=FALSE}
+calc_mean <- function(data,i) {
+    data_new <- data[i,]$Price
+    mean <- sum(data_new)/length(data_new)
+    return(mean)
+}
+    
+bootsample <- boot(prices1,statistic=calc_mean,R=1000)
+hist(bootsample$t,main="Histogram of boot sample",xlab="Bootstrap mean sample",ylab="Frequency")
+
+#Bias corrected estimator
+mean_biascorrect <- 2*samp_mean - sum(bootsample$t)/1000
+
+variance  <- sum((bootsample$t-mean_biascorrect)^2)/999
+#Determine the bootstrap bias{correction and the variance of the mean price?
+
+
+cat("\nBootstrap bias correction:", mean_biascorrect)
+cat("\n\nVariance by boot strap sample:", variance)
+```
+
+```{r,echo=FALSE}
+cat("\n\n95% confidence interval for the mean price using bootstrap percentile: \n\n")
+ci_perc <- boot.ci(bootsample,conf= 0.95,type="perc")
+ci_perc
+
+cat("\n\n95% confidence interval for the mean price using bootstrap Bca: \n\n")
+ci_bca <- boot.ci(bootsample,conf= 0.95,type="bca")
+ci_bca
+
+cat("\n\n95% confidence interval for the mean price using first order normal approximation: \n\n")
+ci_norm <- boot.ci(bootsample,conf= 0.95,type="norm")
+ci_norm
+
+```
+
+##Variance of the mean price using the jackknife and compare with bootstrap
+The variance of mean price by bootstrap is slightly higher than that estimated vy  jacknife. 
+```{r,echo=FALSE}
+x <- c()
+for( i in 1:nrow(prices1)){
+    T_i <- sum(prices1[-i,]$Price)/(n-1)
+    x[i] <- (n*samp_mean - (n-1)*T_i)
+}
+
+x_mean <- sum(x)/n
+
+v <- sum((x-x_mean)^2)/(n*(n-1))
+
+cat("Variance using Jackknife:", v)
+```
+
+\newpage
+
+##Compare the confidence intervals obtained
+```{r,echo=FALSE}
+compare_data <- matrix(0,ncol=1,nrow=0)
+compare_data <- rbind(compare_data,ci_perc$percent[5]-ci_perc$percent[4])
+compare_data <- rbind(compare_data,ci_bca$bca[5]-ci_bca$bca[4])
+compare_data <- rbind(compare_data,ci_norm$normal[3]-ci_norm$normal[2])
+compare_data <- as.data.frame(compare_data)
+colnames(compare_data) <- "Length"
+rownames(compare_data) <- c("Percentile","BCa","1st order
+normal")
+```
+
+From the length and figure, it seems that the actual mean price is contained in all various CI but the length of CI under 1st normal approximation seems to be least which might suggest we can use it to say about location of mean with more confidence 
+
+```{r, echo=FALSE}
+{hist(bootsample$t,col=gray(0.8),main="",xlab="Bootstrap Mean",ylab="Frequencies",cex.axis=1.5,cex.lab=0.8)
+segments(samp_mean,150,samp_mean,0,lwd=3, col="red");
+segments(samp_mean,150,980,150,lwd=3,lty = 2,col="red");
+
+segments(ci_perc$percent[4],20, ci_perc$percent[4],0,lwd=3, col="blue")
+segments(ci_perc$percent[4],20, 980,20,lwd=3,lty = 2, col="blue")
+
+segments(ci_perc$percent[5],20, ci_perc$percent[5],0,lwd=3, col="blue")
+segments(ci_perc$percent[5],20,2000,20,lwd=3,lty = 2, col="blue")
+
+segments(ci_norm$normal[2],50, ci_norm$normal[2],0,lwd=3, col="green")
+segments(ci_norm$normal[2],50, 980,50,lwd=3,lty = 2,col="green")
+
+segments(ci_norm$normal[3],50, ci_norm$normal[3],0,lwd=3, col="green")
+segments(ci_norm$normal[3],50, 2000,50,lwd=3,lty = 2,col="green")
+
+segments(ci_bca$bca[4],80, ci_bca$bca[4],0,lwd=3, col="black")
+segments(ci_bca$bca[4],80, 980,80,lwd=3,lty = 2,col="black")
+
+segments(ci_bca$bca[5],80, ci_bca$bca[5],0,lwd=3, col="black")
+segments(ci_bca$bca[5],80, 2000,80,lwd=3, col="black")
+
+legend("topright",col=c("red","blue","green","black"),pch=17,legend=c("True mean","0.95 CI bootstrap percentile","0.95 CI First order
+normal approximation","0.95 CI bootstrap BCa"),bty="n",cex=0.7)
+
+}
+```
+
+
+Below table compares the length of three 95% confidence interval type .
+
+```{r,echo=FALSE}
+t <- knitr::kable(compare_data,format="latex",caption="Comparison of various confidence interval") 
+kableExtra::kable_styling(t,latex_options = "hold_position")
+```
+
+
+

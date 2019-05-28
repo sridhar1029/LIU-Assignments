@@ -1,0 +1,133 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+
+
+\newpage
+```{r , include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	eval=TRUE,
+	message = FALSE,
+	warning = FALSE,
+	comment = NA
+)
+
+```
+
+# EM Algorithm
+
+## Time Series plot describing dependence of Z and Y versus X.
+
+```{r}
+#1
+library(ggplot2)
+
+physical_data = read.csv("physical1.csv")
+#head(physical_data)
+
+ggplot(physical_data) + 
+  geom_line(aes(X, Y, color='Y')) + 
+  geom_line(aes(X, Z, color='Z')) + 
+  ggtitle("Plot of Y and Z vs X")
+
+```
+
+Both Y and Z in this plot have a similar patter, just the scale of the oscillation is different. Z oscilates with an higher amplitude than Y. Both Y and Z decay over time in a similar manner.
+
+## Derive an EM algorithm that estimates $\lambda$.
+
+$$ 
+Y_i \approx  exp(\frac{X_i}{\lambda}), \\
+Z_i \approx exp(\frac{X_i}{2 * \lambda}) 
+$$
+Where $\lambda$ is an unknown parameters. The goal is to derive the EM algorithm that estimates $\lambda$.
+
+$$
+\begin{split}
+L(\lambda|Y,Z) & = \prod_{i=1}^{n}f(Y) \times \prod_{i=1}^{n}f(Z) \\
+ & = \prod_{i=1}^{n} \frac{X_i}{\lambda} \cdot e^{-\frac{X_i}{\lambda}Y_i} \times \prod_{i=1}^{n}\frac{X_i}{2\lambda} \cdot e^{-\frac{X_i}{\lambda}Z_i}\\
+ & = \frac{X_1  \cdot \dotso \cdot X_n}{\lambda^n} \times e^{-\frac{1}{\lambda}\sum_{1}^{n}{X_i Y_i}} \times \frac{X_1  \cdot \dotso \cdot X_n}{(2\lambda)^n} \times e^{-\frac{1}{2\lambda}\sum_{1}^{n}{X_i Z_i}} \\
+ lnL(\lambda|Y,Z) & = \sum_{i=1}^{n}ln(X_i)-nln(\lambda)-\frac{1}{\lambda}\sum_{i=1}^{n}{X_i Y_i}~+\sum_{i=1}^{n}ln(X_i)-nln(2\lambda)-\frac{1}{2\lambda}\sum_{i=1}^{n}{X_iZ_i}
+\end{split}
+$$
+
+###E-step : Derive Q function
+
+$$
+\begin{split}
+Q(\theta,\theta^k) & =E[~loglik(\lambda|Y,Z)~|~\lambda^k ,(Y,Z)] \\
+&= \sum_{i=1}^{n}ln(X_i)-nln(\lambda)-\frac{1}{\lambda}\sum_{i=1}^{n}{X_i Y_i}~+\sum_{i=1}^{n}ln(X_i)-nln(2\lambda)\\
+&~~~~~-\frac{1}{2\lambda}\bigg[\sum_{i=1}^{n}{X_iZ_i}~+m\cdot X_i\cdot\frac{2\lambda_{k-1}}{X_i}\bigg]
+\end{split}
+$$
+
+Here, we are taking expectation on the missing values in Z, so we need to seperate the $Z_{obs}$ and $Z_{miss}$.  
+Here we are assuming there are 'm' missing Z values. $\lambda_{k}$ is the lambda value from the previous iteration.
+
+
+###M-step
+We calculate the maximum likelihood estimate ($\lambda_{MLE}$) of the parameters by taking the derivative with respect to $\lambda$. Repeat till estimate converges. 
+
+$$
+\begin{split}
+-\frac{n}{\lambda}-\frac{n}{\lambda}~+\frac{\sum_{i=1}^{n}{X_i Y_i}}{\lambda^2}~+\frac{\sum_{i}^{m}{X_iZ_i}~+m\cdot2\lambda_{k-1}}{2\lambda^2}&:=0\\
+-2\lambda(2n)+2\sum_{i=1}^{n}{X_iY_i}~+\sum_{i=1}^{n}{X_iZ_i}+m\cdot2\lambda_{k-1} & := 0\\
+\\
+\lambda=\frac{\sum_{i=1}^{n}{X_iY_i}+\frac{1}{2}\sum_{i=1}^{n}{X_i}{Z_i}+m\cdot\lambda_{k-1}}{2n}
+\end{split}
+$$
+
+## Implement EM Algorithm.
+
+```{r}
+##3
+EM.Exp<-function(data, eps, kmax, lambda_0){
+  X <- data$X; Y <- data$Y; Z <- data$Z
+  Xobs <- X[!is.na(Z)]
+  Zobs <- Z[!is.na(Z)]
+  Zmiss <- Z[is.na(Z)]
+  n <- length(X)
+  m <- length(Zmiss)
+  k <<- 0
+  llvalprev <- 0
+  llvalcurr <- lambda_0
+  cat("Initial lambda value : ", llvalcurr, "\n")
+  
+  while ((abs(llvalprev-llvalcurr)>eps) && (k<(kmax+1))){
+    llvalprev<-llvalcurr
+    llvalprev <- llvalcurr
+    llvalcurr <- (sum(X*Y)+sum(Xobs*Zobs)/2+m*llvalprev)/(2*n)
+    k <<- k+1
+  }
+  return(c(llvalprev,llvalcurr,k))
+}
+lmb = EM.Exp(physical_data,0.001,100,100)
+cat("The final converged lambda value : ", lmb[1], "\n")
+cat("Number of steps taken to converge : ", lmb[3], "\n")
+lambda <- lmb[2]
+new_data <- physical_data
+new_data$E_Y <- lambda/physical_data$X
+new_data$E_Z <- 2*lambda/physical_data$X
+
+```
+
+We initialized $\lambda_{0}$ to 100 and it got converged at value $\lambda_{Converged}$ to 10.69587
+
+We then went on to calculate the Expected values for Y and Z using this $\lambda$. Since Y and Z belong to Exponential distribution, the formula to compute the Expected value for them is : 
+$$E[Y]=\frac{\lambda}{X_i}~,~~E[Z]=\frac{2\lambda}{X_i}$$
+
+```{r}
+#4
+ggplot(data=new_data) +
+  geom_line(aes(x = X, y = Y, colour = "Y")) +
+  geom_line(aes(x = X, y = Z, colour = "Z")) +
+  geom_line(aes(x = X, y = E_Y, colour = "E_Y")) +
+  geom_line(aes(x = X, y = E_Z, colour = "E_Z")) +
+  ggtitle("Expected value of Y and Z")
+
+```
+
+From the plot we can see that the E[Y] and E[Z] capture the trend of Y and Z respectively, so we can conclude that the estimated lambda using EM algorithm is a good estimate.

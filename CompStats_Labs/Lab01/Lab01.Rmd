@@ -1,0 +1,239 @@
+---
+title: "Lab01"
+author: "Naveen Gabriel"
+date: "23 January 2019"
+output: 
+        pdf_document :
+            toc  : true
+            toc_depth: 5
+---
+
+\newpage
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE,
+	comment= NA
+)
+```
+
+#1. Question 1: Be careful when comparing
+
+##1 Code comparsion 1
+The below code comparison for **x1-x2 == 1/12** would result in "Subtraction is wrong" output although the expected result is otherwise. This is because internally, the computer use binary floating point format that cannot accurately represent 0.1,0.2,0.3 etc. but can correctly represent 0.5,0.25 accurately since later is the multiple of 1/2. So to represent accurately, the numbers are often rounded off to nearest value.
+
+For the below code , even though 1/3-1/4 should result in 1/12 but 1/3 and 1/4 is stored as differently so their differences are different from the actual result which 1/12. 
+```{r message=FALSE, warning=FALSE, echo= TRUE}
+x1<-1/3 ; x2<-1/4
+if(x1-x2==1/12){
+    print("Subtraction is correct")
+}else{
+    print("Subtraction is wrong")
+}
+```
+
+<br>
+
+Following code shows how differently the computer represent **1/3-1/4** 
+from 1/12.
+```{r message=FALSE, warning=FALSE, eval=FALSE, echo=TRUE}
+> print(1/3-1/4,digits=20)
+[1] 0.083333333333333315
+> print(1/12,digits=20)
+[1] 0.083333333333333329
+```
+
+
+<br>
+
+**To improve, below are the suggestions(commented in code):**
+```{r message=FALSE, warning=FALSE, echo= TRUE}
+#round off the decimal to nearest 2 or 3 digits.
+x1 <- 1/3 ; x2 <- 1/4
+x3 <- 1/12
+
+if(round(x1-x2,2)==round(x3,2)){
+    print("Subtraction is correct")
+}else{
+    print("Subtraction is wrong")
+}
+```
+
+<br>
+
+```{r message=FALSE, warning=FALSE}
+#Use all.equal function which test near equality of 2 numbers
+if(all.equal(x1-x2,1/12)){
+    print("Subtraction is correct")
+}else{
+    print("Subtraction is wrong")
+}
+```
+
+##2 Code  comparsion 2
+Below output for the code seems to expected which is **Subtraction is 
+correct**. But to make a habit, it would be better to round off any 
+operation which involves fraction.
+```{r message=FALSE, warning=FALSE,echo= FALSE}
+x1<-1 ; x2<-1/2
+if(x1-x2==1/2){
+    print("Subtraction is correct")
+}else{
+    print("Subtraction is wrong")
+}
+```
+
+
+#2. Derivative
+##1. Writing R function to calculate derivative f(x) = x
+```{r}
+derivative <- function(f) {
+    ex <- 1e-15    #A small change in x
+    
+    deriv <- ((f + ex) - f)/ex
+    return(deriv)
+}
+```
+
+##2. Evaluating Derivative at x = 1 and x = 100000
+```{r}
+#at x=1
+x1<-derivative(1)
+
+# at x=100000
+x2 <- derivative(100000)
+
+cat ("\n\nDerivative of f(x)= x")
+cat("\n At x = 1 :", x1)
+cat("\n At x = 100000 :", x2)
+```
+
+##3. Analysis
+
+The expected derivative of f(x) = x should be 1 and it should not vary 
+irrepectiveof the different values of x but the above derivative function 
+returns 1.110223 and0 at x=1 and x = 100000 repectively. This should not happen.
+
+<br>
+
+For the first case, the computer is trying to match exponent of $10^{-15}$
+to the exponent of 1 while doing the sum. As a result, the mantissa of the 
+resulting sum looses some of its significant bit and computer rounds off the 
+right most bits and when converted to decimal we get the value the 0.0000000000000011102230246251565. This value when divided by $10^{-15}$ gives
+1.110223 .
+
+For the second case, internally the computer is trying to match exponent
+of $10^{-15}$ to the exponent of 10000 while doing a sum. As a result the
+mantissa of $10^{-15}$ is very small(becomes zero). As a result the sum of
+both is 100000 which once it is subtracted from 100000 yields 0. Basically an 
+overflow is happening.
+
+#3. Variance
+##1. Function to calculate variance 
+```{r}
+#function accepts a vector whose variance needs to be calculated.
+myvar <- function(x){
+    len <- length(x)
+    var <- (sum(x^2)-(1/len)*(sum(x))^2)*1/(len-1)
+    
+    return(var)
+}
+```
+
+
+##2. Generating vectors and analysing variance
+The in built function variance converges towards one value after some subsets
+but the variance calculated by myvar function does not converges to one. The variance calculated by myvar oscillates between +ve and -ve value. This is because of the loss in bits and rounding off error due to overflow. 
+```{r}
+vec <- rnorm(n=10000,mean=10^8,sd=1)
+diff <- c()
+
+for(i in 1:length(vec)) {
+ diff[i]<-myvar(vec[1:i]) - var(vec[1:i]) 
+}
+
+
+{plot(x=1:length(vec),y=diff,xlab="Length of vector", 
+     ylab ="Variance estimator differences" )
+title(main="Length of vector vs differences in variance estimator")}
+```
+
+##3. Implementing a better variance estimator
+Reimplementing the variance estimator shows that the difference in error between new var estimator and in built R has reduced and it converges to zero.
+```{r}
+myvar2 <- function(x){
+    len <- length(x)
+    mn <- sum(x)/len
+    sum <- 0
+    
+    sum <- sum((x - mn)^2)/len
+    return(sum)
+}
+
+for(i in 1:length(vec)) {
+ diff[i] <- myvar2(vec[1:i]) - var(vec[1:i]) 
+}
+
+{plot(x=1:length(vec),y=diff,ylim =c(-0.6,0.6),xlab="Length of vector", 
+     ylab ="Variance estimator differences" )
+title(main="Length of vector vs differences in variance estimator")}
+
+```
+
+
+#4. Linear Algebra
+
+##1. Solving A$\beta$ = b using solve()
+* On using solve() to compute coeffecients of linear regression, it throws below error which basically means that the matrix A is neary singular. The inverse for the singular matrix does not exist. A small reciprocal condition number suggest that the matrix A is badly conditioned and their is a huge loss of accuracy and the resulting data is meaningless.
+
+* Here, kappa returns the condition number of the matrix A. Large value of condition number suggest that a small perturbation in A or b would result in large change in $\beta$ which is denotes that A is badly conditioned. Ideally a small perturbation in A or b should have a small perturbation in $\beta$.
+The value of kappa does supports the above aforementioned conculsion of the result of solve().
+```{r,echo=FALSE}
+tec <- read.csv("tecator.csv")
+x <- subset(tec,select = -c(Protein))
+y <- as.vector(tec[,c("Protein")])
+
+x <- as.matrix(x)
+a <- t(x)%*%x
+b <- t(x)%*%y
+```
+
+```{r,eval=TRUE}
+cat("\n\n Determinant of matrix A : ", det(a))
+#z<-solve(a,b)
+tryCatch(solve(a,b),
+         error = function(e){
+           message("\n\nAn error occurred:\n", e)})
+
+
+cat("\n\n Condition number for a matrix : ",kappa(a))
+```
+
+##2. Scaling the data and reperforming the computation
+* On scaling the data, it is possible to evaluate the coeffecients using solve(). The determinant of matrix A is still computationally zero but solve function is able to calculate the inverse of A. The reasoning would be that, the determinant of scaled matrix A is not as small as the determinant of unscaled matrix A and computer is able to solve the equation. 
+* Condition value of scaled matrix A is lesser than unscaled one which suggest that the perturbation in scaled matrix A results in output which has less perturbation than unscaled matrix.  
+
+```{r, eval=TRUE, echo=FALSE,eval=FALSE }
+#scaling the data
+tec_new <- scale(tec)
+
+x_new <- subset(tec_new,select = -c(Protein))
+y_new <- as.vector(tec_new[,c("Protein")])
+
+x_new <- as.matrix(x_new)
+a <- t(x_new)%*%x_new
+b <- t(x_new)%*%y_new
+
+z<-solve(a,b)
+kappa(a)
+```
+
+```{r, echo=FALSE}
+cat("\nCondition number for the scaled matrix A:",kappa(a))
+```
+
+#5. Appendix
+```{r , ref.label=knitr::all_labels(),echo=TRUE,eval=FALSE}
+```
+
