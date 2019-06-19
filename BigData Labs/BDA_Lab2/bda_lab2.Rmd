@@ -1,0 +1,405 @@
+---
+title: "732A54 - Big Data Analytics"
+subtitle: "BDA2 Lab"
+author: "Sridhar Adhikarla (sriad858), Obaid Ur Rehman (obaur539)"
+output: pdf_document
+---
+
+# Question 1:
+
+  * `year, station with the max, maxValue ORDER BY maxValue DESC`
+  * `year, station with the min, minValue ORDER BY minValue DESC`
+  
+### Code:
+```{r eval=FALSE}
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+
+from pyspark import SparkContext
+from pyspark.sql import SQLContext, Row
+from pyspark.sql import functions as F
+
+iFile = 'data/temperature-readings.csv'
+oFile1 = 'outputs/out1_1'
+oFile2 = 'outputs/out1_2'
+
+fromYear = 1950
+toYear = 2014
+
+sc = SparkContext(appName = "Lab2_Q1_SparkSQLJob")
+sqlContext = SQLContext(sc)
+
+temperature_file = sc.textFile(iFile)
+
+lines = temperature_file.map(lambda line: line.split(";"))
+temp = lines.filter(lambda x:(int(x[1][0:4]) >= fromYear and int(x[1][0:4]) <=toYear))
+temp = temp.map(lambda x: Row(station=x[0], year=int(x[1][0:4]), temp = float(x[3])))
+
+schemaTempReadings =sqlContext.createDataFrame(temp)
+schemaTempReadings.registerTempTable("tempReadings")
+
+schemaTempReadingsMin = 
+  schemaTempReadings.groupBy('year','station').agg(F.min('temp').alias('mintemp'))\
+  .orderBy(['mintemp'],descending=1)
+
+schemaTempReadingsMax = 
+  schemaTempReadings.groupBy('year','station').agg(F.max('temp').alias('maxtemp'))\
+  .orderBy(['maxtemp'], ascending = False)
+
+schemaTempReadingsMin.rdd.repartition(1).saveAsTextFile(oFile1)
+schemaTempReadingsMax.rdd.repartition(1).saveAsTextFile(oFile2)
+
+
+print(schemaTempReadingsMin.take(15))
+print(schemaTempReadingsMax.take(15))
+
+```
+
+### MIN Temp:
+```{r}
+out1_1 = read.csv("outputs/out1_1/part-00000", header = FALSE)
+head(out1_1)
+```
+
+
+
+### MAX Temp:
+```{r}
+out1_2 = read.csv("outputs/out1_2/part-00000", header = FALSE)
+head(out1_2)
+```
+
+\newpage
+
+# Question 2:
+
+  * `year, month, value ORDER BY value DESC`
+  * `year, month, value ORDER BY value DESC`
+
+### Code:
+```{r eval=FALSE}
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+
+from pyspark import SparkContext
+from pyspark.sql import SQLContext, Row
+from pyspark.sql import functions as F
+
+iFile = 'data/temperature-readings.csv'
+oFile1 = 'outputs/out2_a1'
+oFile2 = 'outputs/out2_a2'
+
+#2A
+sc = SparkContext(appName = "Lab2_Q2_SparkSQLJob")
+sqlContext = SQLContext(sc)
+
+temperature_file = sc.textFile(iFile)
+lines = temperature_file.map(lambda line: line.split(";"))
+temp = lines.filter(lambda x:(int(x[1][0:4]) >= 1950 and int(x[1][0:4]) <=2014))
+temp = temp.map(lambda x: Row(station=x[0], year=int(x[1][0:4]), 
+                              month = int(x[1][5:7]), temp = float(x[3])))
+
+schemaTempReadings =sqlContext.createDataFrame(temp)
+schemaTempReadings.registerTempTable("tempReadings")
+
+#API method
+schemaNumReadings = schemaTempReadings \
+.filter(schemaTempReadings['temp']>10).groupBy('year','month').count()
+schemaNumReadings.rdd.repartition(1).saveAsTextFile(oFile1)
+print(schemaNumReadings.take(10))
+
+#Sql method
+SQL_NumReadings = sqlContext.sql(
+    "SELECT year, month, count(temp) as count FROM tempReadings WHERE temp>10 
+    GROUP BY year, month ORDER BY count DESC")
+SQL_NumReadings.rdd.repartition(1).saveAsTextFile(oFile2)
+print(SQL_NumReadings.take(10))
+
+
+#2B
+oFile3 = 'outputs/out2_b1'
+oFile4 = 'outputs/out2_b2'
+
+temperature_file = sc.textFile(iFile)
+lines = temperature_file.map(lambda line: line.split(";"))
+temp = lines.filter(lambda x:(int(x[1][0:4]) >= 1950 and int(x[1][0:4]) <=2014))
+temp = temp.map(lambda x: Row(station=x[0], year=int(x[1][0:4]), 
+                              month = int(x[1][5:7]), temp = float(x[3])))
+
+schemaTempReadings =sqlContext.createDataFrame(temp)
+schemaTempReadings.registerTempTable("tempReadings")
+
+#API method
+schemaNumReadings_st = schemaTempReadings.filter(schemaTempReadings['temp']>10) \
+.groupBy('year','month').agg(F.countDistinct("station")) \
+.orderBy(['count(station)'],ascending = 0)
+schemaNumReadings_st.rdd.repartition(1).saveAsTextFile(oFile3)
+print(schemaNumReadings_st.take(10))
+
+#SQL Method
+SQL_NumReadings_st = sqlContext.sql(
+    "SELECT year, month, count(DISTINCT station) as count FROM tempReadings WHERE
+    temp>10 GROUP BY year, month ORDER BY count DESC")
+SQL_NumReadings_st.rdd.repartition(1).saveAsTextFile(oFile4)
+print(SQL_NumReadings_st.take(10))
+
+```
+
+### Temperatures readings counts:
+```{r}
+out2_a1 = read.csv("outputs/out2_a1/part-00000", header = FALSE)
+head(out2_a1, 10)
+out2_a2 = read.csv("outputs/out2_a2/part-00000", header = FALSE)
+head(out2_a2, 10)
+```
+
+### Distinct Station Temperatures readings counts:
+```{r}
+out2_b1 = read.csv("outputs/out2_b1/part-00000", header = FALSE)
+head(out2_b1, 10)
+out2_b2 = read.csv("outputs/out2_b2/part-00000", header = FALSE)
+head(out2_b2, 10)
+```
+
+\newpage
+
+# Question 3:
+
+ * `year, month, station, avgMonthlyTemperature ORDER BY avgMonthlyTemperature DESC`
+ 
+### Code:
+```{r eval=FALSE}
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+
+from pyspark import SparkContext
+from pyspark.sql import SQLContext, Row
+from pyspark.sql import functions as F
+
+iFile = 'data/temperature-readings.csv'
+oFile = 'outputs/out3'
+
+sc = SparkContext(appName="Lab2_Q3_SparkSQLJob")
+
+sqlContext = SQLContext(sc)
+
+temperature_file = sc.textFile(iFile)
+lines = temperature_file.map(lambda line: line.split(";"))
+temp = lines.filter(lambda x:(int(x[1][0:4]) >= 1960 and int(x[1][0:4]) <=2014))
+temp = temp.map(lambda x: Row(station=x[0], year=int(x[1][0:4]), 
+                              month = int(x[1][5:7]), temp = float(x[3])))
+
+schemaTempReadings =sqlContext.createDataFrame(temp)
+schemaTempReadings.registerTempTable("tempReadings")
+
+avgTemp = schemaTempReadings.groupBy('year','month','station') \
+.agg(F.avg('temp').alias('avgtemp')).orderBy(['avgtemp'],ascending = False)
+avgTemp.rdd.repartition(1).saveAsTextFile(oFile)
+print(avgTemp.take(15))
+
+```
+
+### Average monthly temperatures:
+```{r}
+out3 = read.csv("outputs/out3/part-00000", header = FALSE)
+head(out3, 10)
+```
+
+\newpage
+
+# Question 4:
+
+ * `station, maxTemp, maxDailyPrecipitation ORDER BY station DESC`
+ 
+### Code:
+```{r eval=FALSE}
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+
+from pyspark import SparkContext
+from pyspark.sql import SQLContext, Row
+from pyspark.sql import functions as F
+
+iFile = 'data/temperature-readings.csv'
+iFile2 = 'data/precipitation-readings.csv'
+oFile = 'outputs/out4'
+
+sc = SparkContext(appName = "Lab2_Q4_SparkSQLJob")
+sqlContext = SQLContext(sc)
+
+temperature_file = sc.textFile(iFile)
+lines = temperature_file.map(lambda line: line.split(";"))
+temp = lines.map(lambda x: Row(station=x[0], temp = float(x[3])))
+schemaTempReadings =sqlContext.createDataFrame(temp)
+schemaTempReadings.registerTempTable("tempReadings")
+
+preci_file = sc.textFile(iFile2)
+plines = preci_file.map(lambda line: line.split(";"))
+prec = plines.map(lambda x: Row(station=x[0], date = x[1], prec = float(x[3])))
+schemaPrecReadings =sqlContext.createDataFrame(prec)
+schemaPrecReadings.registerTempTable("precReadings")
+
+#finding max temperature and filtering
+maxTemp = schemaTempReadings.groupBy('station').agg(F.max('temp').alias('maxtemp'))
+maxTemp = maxTemp.filter(maxTemp.maxtemp>25).filter(maxTemp.maxtemp<30)
+
+#finding max daily prec and filtering
+dailyPrec = schemaPrecReadings.groupBy('station','date') \
+.agg(F.sum('prec').alias('dailyPrec'))
+
+maxDailyPrec = dailyPrec.groupBy('station') \
+.agg(F.max('dailyPrec').alias('maxdailyPrec'))
+
+maxDailyPrec = maxDailyPrec.filter(maxDailyPrec.maxdailyPrec>=100) \
+.filter(maxDailyPrec.maxdailyPrec<=200)
+
+#joining
+StationMax = maxTemp.join(maxDailyPrec, "station") \
+.orderBy(['station'],ascending = False)
+
+StationMax.rdd.repartition(1).saveAsTextFile(oFile)
+print(StationMax.take(15))
+
+```
+
+### Max daily temperatures/precipitation:
+##### We get an empty file as output for this question
+```{r eval=FALSE}
+out4 = read.csv("outputs/out4/part-00000", header = FALSE)
+```
+
+\newpage
+
+# Question 5:
+
+ * `station, maxTemp, maxDailyPrecipitation ORDER BY station DESC`
+
+### Code:
+```{r eval=FALSE}
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+
+from pyspark import SparkContext
+from pyspark.sql import SQLContext, Row
+from pyspark.sql import functions as F
+
+iFile = 'data/stations-Ostergotland.csv'
+iFile2 = 'data/precipitation-readings.csv'
+oFile = 'outputs/out5'
+
+sc = SparkContext(appName="Lab2_Q5_SparkSQLJob")
+sqlContext = SQLContext(sc)
+
+stations = sc.textFile(iFile)
+stations = stations.map(lambda line:line.split(";"))
+stations = stations.map(lambda x:Row(station=x[0], name=x[1]))
+stations = sqlContext.createDataFrame(stations)
+stations.registerTempTable("O_Stations")
+
+preci_file = sc.textFile(iFile2)
+plines = preci_file.map(lambda line: line.split(";"))
+prec = plines.filter(lambda x:(int(x[1][0:4]) >= 1993 and int(x[1][0:4]) <=2016))
+prec = plines.map(lambda x: Row(station=x[0], year = x[1][0:4], 
+                                month = x[1][5:7], prec = float(x[3])))
+schemaPrecReadings =sqlContext.createDataFrame(prec)
+schemaPrecReadings.registerTempTable("precReadings")
+
+avgPrec = stations.join(schemaPrecReadings, "station")
+avgPrec = avgPrec.groupBy("year", "month", "station") \
+.agg(F.sum("prec").alias("monthlyPrec"))
+
+avgPrec = avgPrec.groupBy("year","month") \
+.agg(F.avg("monthlyPrec").alias("avgMonthlyPrec")) \
+.orderBy(["year", "month"], ascending=[0,0])
+
+avgPrec.rdd.repartition(1).saveAsTextFile(oFile)
+print(avgPrec.take(10))
+
+```
+
+### Ostergotland average monthly precipitation:
+```{r}
+out5 = read.csv("outputs/out5/part-00000", header = FALSE)
+head(out5, 10)
+```
+
+\newpage
+
+# Question 6:
+
+ * `Year, month, difference ORDER BY year DESC, month DESC`
+
+### Code:
+```{r eval=FALSE}
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+
+from pyspark import SparkContext
+from pyspark.sql import SQLContext, Row
+from pyspark.sql import functions as F
+
+iFile = 'data/stations-Ostergotland.csv'
+iFile2 = 'data/temperature-readings.csv'
+oFile = 'outputs/out6'
+
+sc = SparkContext(appName="Lab2_Q6_SparkSQLJob")
+sqlContext = SQLContext(sc)
+
+stations = sc.textFile(iFile)
+stations = stations.map(lambda line:line.split(";"))
+stations = stations.map(lambda x:Row(station=x[0], name=x[1]))
+stations = sqlContext.createDataFrame(stations)
+stations.registerTempTable("O_Stations")
+
+temperature_file = sc.textFile(iFile2)
+lines = temperature_file.map(lambda line: line.split(";"))
+temp = lines.filter(lambda x:(int(x[1][0:4]) >= 1950 and int(x[1][0:4]) <=2014))
+temp = temp.map(lambda x: Row(station=x[0], year=int(x[1][0:4]), 
+                              month = int(x[1][5:7]),temp = float(x[3])))
+schemaTempReadings =sqlContext.createDataFrame(temp)
+schemaTempReadings.registerTempTable("tempReadings")
+
+avgMonthTemp = schemaTempReadings.groupBy('year','month','station') \
+.agg(F.avg('temp').alias('stationavg'))
+
+#Average monthly temperature in Ostergotland stations
+avgMonthTemp = stations.join(avgMonthTemp, "station")
+avgMonthTemp = avgMonthTemp.groupBy('year','month') \
+.agg(F.avg('stationavg').alias('avgMonthTemp'))
+
+#filtering to find longterm average
+longMonthTemp = avgMonthTemp.filter(avgMonthTemp.year <= 1980)
+longMonthTemp = longMonthTemp.groupBy("month") \
+.agg(F.avg("avgMonthTemp").alias("longAvg"))
+
+#Joining the long term average and monthly average dataframes
+MonthlyAvgDiff = avgMonthTemp.join(longMonthTemp, "month")
+MonthlyAvgDiff = MonthlyAvgDiff.withColumn("difference",
+                              MonthlyAvgDiff.avgMonthTemp-MonthlyAvgDiff.longAvg)
+
+MonthlyAvgDiff = MonthlyAvgDiff.select("year","month","difference") \
+.orderBy(["year","month"],ascending=[0,0])
+
+MonthlyAvgDiff = MonthlyAvgDiff.map(lambda line: '%s,%s,%s'%(int(line[0]),
+                                                             int(line[1]),
+                                                             float(line[2])))
+print(MonthlyAvgDiff.take(10))
+
+MonthlyAvgDiff.repartition(1).saveAsTextFile(oFile)
+print(MonthlyAvgDiff.take(10))
+
+```
+
+### Ostergotland average monthly precipitation temperature difference:
+```{r}
+out6 = read.csv("outputs/out6/part-00000", header = FALSE)
+colnames(out6) = c("year", "month", "tempDiff")
+head(out6, 10)
+```
+
+### plot:
+```{r}
+library(ggplot2)
+ggplot(out6) +
+  geom_boxplot(aes(x = year, y = tempDiff, group = year))
+```
