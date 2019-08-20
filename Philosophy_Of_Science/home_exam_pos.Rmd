@@ -1,0 +1,157 @@
+---
+title: "Philosophy Of Science Home Exam"
+author: "Sridhar Adhikarla (sriad858)"
+date: "May 20, 2019"
+output: 
+    pdf_document:
+      toc : true
+      toc_depth: 1
+---
+
+\newpage
+
+# Question 1 -
+### What is the hypothetico-deductive method, and what are its strengths and weaknesses with respect to its ability to verify and/or falsify hypotheses? Do you think science revolves around the use of the H-D method? 
+
+## Answer:
+The hypothetico-deductive method is a proposed description of scientific method. It is an alternative to positivists methods. According to the HD-Method a scientific inquiry can be formulated as a hypothesis, which is falsifiable using a experiment or test on the observed data where the outcome is not known. An outcome of the experiment or test that runs contrary to the predictions of the hypotheses is considered as falsification of the hypotheses and the outcome that does not run contrary to the hypotheses act as support for the hypotheses. A scientific hypothesis is confirmed when its logical consequences turn out to be true. To assume that the correct prediction confirms our hypothesis is inductive reasoning. The deductive part in the HD-method refers to inference from hypothesis plus the initial conditions to the prediction. This can be better stated with the help of an example.
+
+> Theory is that metal expands on being heated. It is confirmed when we heat the metal and it expands.
+
+This is a simple idea and it does seem to mirror the behavior of the actual scientists, but there are some major problems with it.
+
+##### Problems with HD-method
+* Logic allows us to do some very impressive things which is good if we are interested in abstract logic, but if we are interested in scientific practice it is too promiscuous. Logic lets us go places that science does not want us to go.
+
+* Deduction is not a good approach for a probabilistic claim.
+
+* The result of the HD method is that every statement confirms every other statement. Any arbitrary hypothesis is inductively confirmed by any true observation. The raven's paradox is a good example to show this.
+
+> Hypothesis: "All Ravens are black"
+
+All ravens are black is confirmed by black ravens, refuted by non-black ravens. "All ravens are black" is logically equivalent to "All non-black things are non-ravens". This can be confirmed by observing almost any non-black thing like a blue car. So, using HD-method, observing a blue car lets us confirm the hypothesis "All ravens are black". This is not correct.
+
+The best way to test "All F's are G's" is to look specifically for F's. 
+
+##### Advantages of HD-method
+
+The main advantage of the HD-method is that it is a deductive method. We first come up with a hypothesis, then look at data or observations to verify or falsify our hypothesis. This is how all the scientific experiments work. 
+
+The other advantage of the HD-method is that, scientists can come up with a hypothesis by any means possible, there are no restrictions to it. This leads to some unreasonable hypothesis but, it helps get creativity in the field. This is how some of the greatest discoveries are made. 
+
+Yes, I think science revolves around the HD-method. Most of the scientists use some modified version of the method but the core of it remains the same. A good modification to this method can be to incorporate prior knowledge.
+
+
+
+
+
+
+
+\newpage
+
+# Question 2 -
+### What is a scientific paradigm and how do they influence scientific practice? Is it good or bad that science is guided by paradigms? Do you think the programme you have chosen is schooling you into a particular programme?
+
+## Answer:
+Science can be studied not only for concepts that explain the world around us, but also from a historic and analytic perspective. Even though older scientific theories may have been disproved by newer ones, there is merit is studying how science itself evolves and changes as discoveries are made. In order to understand the development of scientific technique and rationalizations, there was a need for definition of the study of the evolution of science and so was born the study of paradigms and paradigm shifts.
+
+Essentially, a paradigm is a set of assumptions governing how we interact and interpret the world. Paradigms need constant reinforcement to function. If events occur that cannot be explained by the current paradigm, a new one may be generated. The set of assumptions on which a paradigm is based are assumed to be true and often they are assumptions that cannot be tested. For example, in what has been called the Western Science Paradigm, the assumption that God created the universe and that humans are intelligent enough to understand his creation are assumptions that cannot be tested. Although many have tried to prove the existence of God, there will always be an element of faith involved to believe in a supernatural force.
+
+Western science has undergone numerous paradigm shifts, otherwise known as scientific revolutions. These events are triggered by a scientific theory so well proven and revolutionary that it changes the entire set of assumptions on which the current paradigm is based and is replaced by another set. This process does not happen instantly. Scientific paradigms often endure a long time before they are replaced.
+
+Scientific paradigms are good and are necessary for creating a basis to begin research. Scientific inquiry is a quantitative science - relying on numbers, equations and constants in order to work. By its very nature, science requires the researcher to make assumptions about the state of the world before beginning an experiment. One assumption that is fundamental to scientific inquiry is that processes we observe working now are the same as processes which occurred in the past and will occur in the future. If we did not make this assumption, experiments could never be repeated and expected to generate the same results. There would be randomness and unpredictability in all scientific endeavors which is incompatible with the concrete answers science strives to generate.
+
+Paradigms also help narrow the amount of possible theories for observed phenomenon by rejecting those that do not work in the paradigm. For example, we assume gravity works on all objects on the planet. If something is in the air it must have the ability to generate enough lift or force to overpower gravity, as opposed to assuming the object is unaffected by gravity. By setting up the ground rules, paradigms provide information about how to evaluate new theories and ideas. In the end, if the paradigm is successful in generating good ideas, it will even generate the next paradigm that will replace it.
+
+I thing the program I have chosen is training me towards one the most recent scientific paradigm shifts, the start of the "Data Age". As the computation got better we are starting to get better knowledge out of our data to build intelligent machines. The program I chose is training me exactly for this. It is creating our base knowledge in the field so that we could easily get into research on this field and develop better techniques and algorithms. Each course in this program takes us a step closer to becoming a master of the Data Age.
+
+\newpage
+
+# Question 3 -
+### What does it mean for a scientific hypothesis to be falsifiable, and:(i) why is it good that they are falsifiable, and (ii) why is even better that they can be falsified in many different ways?
+
+## Answer:
+A statement, hypothesis, or theory is falsifiable if it is contradicted by a basic statement, which, in an eventual successful or failed falsification, must respectively correspond to a true or hypothetical observation. A statement or theory that is not falsifiable is unscientific, as it is just a belief that we are defining and we cannot proove anything about it. Declaring an unfalsifiable theory to be scientific would then be pseudoscience. It is easy to find confirmations for a theory if we are looking for it. The only genuine test for a theory is one that is attempting to falsify it.
+
+When we being to test a theory, we can either find confirmations for it, or find disconfirmations for it to proove it wrong. The simple difference betweeen science and pseudo-science is, science disconfirms and pseudo-science confirms. It is always easy to look for ways to proove a theory right. We will find many confirmations but our prediction would not be accurate. 
+
+A good example for this could be the hypothesis "All swans are white". Now if we start looking for white swans we will find many, and this would proove our theory right. But it is a wrong way to proove a theory. We will have to consider many observations to make good sence out of our proove in this manner. But insted if we try to disconfirm our hypothesis, and start looking for swans that are not white, this would be a easier and better way to proove a hypothesis. This is the reason it is good for a scientific hypothesis to be falsifiable. Scientists always try to proove theories or hypothesis wrong, and they confirm them in this manner. If they are not able to proove the theory wrong it can be confirmed.
+
+Confirmation should only count if it comes from a risky prediction, like the onces that can destroy your theory. Because every good scientific theory is prohebitive, it rules things out. Using our previous stated hypothesis about swans, "All swans are white", finding a swan in different color prooves the theory entirely wrong. This kind of confirmations make a differnece, when trying to falsify a theory.
+
+The fact that theories can be falsified in many different ways is good because it helps us dicover our false beliefs. Every false belief we discover is actually good because that gets us that much closer to beliving only true things. Using the same swans example we can say that, finding a black swan in our observation helps us get closer to the truth that all swans are not white. It takes us away from our false belief from the hypothesis. 
+
+Whenever someone comes up with a theory, they believe in it that it is correct. Having such a mind set is wrong, and we wont be able to test the throry properly. You have to be open to the idea that your beliefs might be wrong, because thats the only way that holding on to them can really mean anything. This is the reason the scientific theories or hypothesis should be falsifiable. If you try to proove a theory wrong you get rid of the bias factor we had about the theory, our belief, and look for confirmations to falsify our hypothesis. You dont seek to proove scientific theories right, you only try to falsify them by prooving them wrong.
+
+During the mid-20th century, the philosopher Karl Popper emphasized the criterion of falsifiability to distinguish science from nonscience. Statements, hypotheses, or theories have falsifiability or refutability if there is the inherent possibility that they can be proven false. That is, if it is possible to conceive of an observation or an argument which negates them. Popper used astrology and psychoanalysis as examples of pseudoscience and Einstein's theory of relativity as an example of science. He subdivided nonscience into philosophical, mathematical, mythological, religious and metaphysical formulations on one hand, and pseudoscientific formulations on the other, though he did not provide clear criteria for the differences.
+
+
+\newpage
+
+# Question 4 -
+### In what way are observations theory-dependent, and why does that challenge the idea that hypotheses are generated inductively from observations?
+
+## Answer:
+We have to develop a theory before starting to take observations. This prevents us from having a biased theory. If we look at the observations first and them come up with a theory, the theory is observation dependent, then the theory is biased towards the observations we have. There are many reasons this is bad. This can be showed with a simple example. If we had a data of 1000 swans color, all of them being white. If we use this data to come up with a hypothesis, about the color of the swans, it will be "All swans are white". This hypothesis is completely bisaed by the data we observed, which is not correct. Insted if we come up with a hypothesis directly about the color of swans and then try to falsify it by collecting evidence, this is the correct way to approach a problem.
+
+Hypothesis is like having a prior knowledge about the problem in a bayesian prespective. The prior knowledgs tells us about our personal beliefs about the problem, before observing any data. If we look at the data to come up with the prior knowledge that would not help at all. It is like we are learning from the same data twice. This is bad because if our data is biased, our prior also becoms biased and the posterior is affected a lot by this. But insted if we come up with our personal belief about the problem without observing the data, and then use the data to update our posterior, the posterior is not affected too much because of the prior knowledge incorporated.
+
+Another problem we can have if we make theories observation-dependent is lack of focus. There is an infinite space we can collect observations from as we have no defined motive for which we need observations. Anything can be counted as an observation, and in the end making sence of the observations we have would be like searching for something out of everything. The basis of scientific knowledge is provided by observations made by an unprejudiced and unbiased observer. If interpreted anything like literally, this position is absurd and untenable. To illustrate this, let us imagine Heinrich Hertz, in 1888, performing the electrical experiment that enabled him to produce and detect radio waves for the first time. If he is to be totally unbiased when making his observations, then he will be obliged to record not only the readings on various meters, the presence or absence of sparks at various critical locations in the electrical circuits, the dimensions of the circuit etc. but also the colour of the meters, the dimensions of the laboratory, the state of the weather, the size of his shoes and a whole host of "clearly irrelevant" details, irrelevant, that is, to the kind of theory in which Hertz was interested and which he was testing.
+
+Another example for this, hypothetical example, suppose that I was keen to make some contribution to human physiology or anatomy, and suppose I noted that very little work has been done on the weight of human earlobes. If, on the basis of this, I were to proceed to make very careful observations of the weights of a wide variety of human earlobes, recording and categorizing the many observations, I think it is clear that I would not be making any significant contribution to science. I would be wasting my time, unless some theory had been proposed rendering the weight of earlobes important, such as a theory connecting the size of earlobes with the incidence of cancer in some way.
+
+Observation statements are always made in the language of some theory and will be as precise as the theoretical or conceptual framework that they utilize is precise. The concept "force" as used in physics is precise because it acquires its meaning from the role it plays in a precise, relatively autonomous theory, Newtonian mechanics. The use of the same word in everyday language , like the force of circumstance, gale-force-winds, the force of an argument, is imprecise just because the corresponding theories are multifarious and imprecise. Precise, clearly formulated theories are a prerequisite for precise observation statements. In this sense theories precede observation.
+
+\newpage
+
+# Question 5 -
+### What is the difference between the natural and the human sciences according to Ingthorsson? Include a reflection on what Ingthorsson says about the nature of the phenomena that the natural and human sciences study, and relate to what that nature implies about differences in method.
+
+## Answer:
+The human sciences contain a multitude of disciplines that do not selfevidently offer a common denominator. Research in social work focuses on the interaction between individual and public authorities, often using qualitative research methods. They may want to find out how different out reach programmes should be organised to achieve the best effect. Economy studies economical systems, often using mathematical models. The goal might be to find out how 1% price increase in raw cotton from India could affect British households. Archaeology studies the past with the guidance of artefacts found in the ground, sometimes using carbon dating. Literature studies various aspects of the meaning mediated through literature and how it affects us, usually using some form of linguistic or narrative analysis. One might want to find out about the impact of 1984 on contemporary ideas about government control. Philosophy studies, for instance, what cannot be studied empirically but which the empirical sciences take for granted, e.g. objectivity, rationality, and meaning. There is no tracking device for the reliable identification of rationality or ways to chemically analyse it. Conceptual analysis is the appropriate method, simply because rationality is not a chemical compound. As everyone knows, the validity of methods is relative to the subject matter.
+
+Natural science, as the author suggests, is the study of the merely physical, unconscious physical matter in all its forms. In case of biology, natural scientists do study conscious beings like humans. It is possible to study most of the functions of the body quite independently of what goes on in the consciousness of the person inhabiting that body. But when medicine gets involved it diverts the attention of investigation of patients wishes and  wants. This is no longer involved in pure natural sciences. While natural science studies inanimate matters of all kinds, the human sciences study the meaningful phenomena. This is the main difference between natural science and human science. 
+
+The nature of the phenomena studied by the human sciences are special because the properties relevant for their study are at least partly decided by the meaning ascribed to these phenomena by autonomous human beings, and by the actions they spontaneously initiate on the grounds of some or other idea about these phenomena. The natural sciences have completely different prospects of finding regularities of the sort we can generalise to laws, and that we can use to make uncannily exact predictions about future behaviour of various phenomena. The simple reason being that physical nature is lawful and predictable; it offers laws on a silver plate.
+
+Human sciences study everything that involves self-conscious beings. And natural sciences is the oppoite of it. Natural science study involves everything about the physical world which is not conscious. The two sciences have a lot in common than there are differencs, but they study different things. The natural science is lawful while the human science is not. These studies get overlapped in most regions, but the main difference that keeps them apart is the involvement of conscious beings. Like in the example of biology, the natural science is well defined for the time we are talking about the general physical body of a human, and we can talk about individial parts of the body under natural science. But when this is not narrowed down to an individual person or a group of individuals, it is no longer well defined under natural science. It is now a scudy of human science. If we are looking for how a drug reacts on a perticular person, it is a study of human science now, as it involves a conscious being. This is do the two sciences differ, and different methodologies are required to study them.
+
+\newpage
+
+# Question 6 -
+### What is the difference between science and pseudo-science according to Sven-Ove Hansson,and why should we care?
+
+## Answer:
+The main difference between science and pseudo-science is that science looks for proofs to disconfirm a theory, while pseudo-science looks for proofs to confirm a theory. In science we Use careful observation and experimentation to confirm or reject a hypothesis. Evidence against theories and hypothesis are searched for and studied closely. Pseudo-science starts with a hypothesis, looks only for evidence to support it, with little or no experimentation. The conflicting evidences are ignored, excused, or hidden. The original idea is never abandoned, whatever the evidence.   
+
+It is easy to find confirmation of a theory if you are looking for it. If the hypothesis is "All ravens are black", and we try to confirm it using pseudo-science, that is by trying to look for confirmations for it, it is easy to find black ravens. The outliers are the ones that are hard to find. If we just keep looking for confirmations for a theory we will find it. This can lead to the fact that any theory can get confirmation under the pseudo-science. The theory or hypothesis under pseudo-science are non-falsifiable. They can only be confirmed, they cannot be falsified.
+
+The same hypothesis, "All ravens are black", if tested under science, we try to disconfirm or falsify the theory. Even if we came up with the hypothesis, we ignore all prior knowledge and start looking for evidence to falsify the hypotheis. Every false belied we discover is actually good, because that gets us that much closer to beliving only true things. Our main goal is to look for ravens that are not black, which would happen rarely, but if we observe something like that then we successfully falsify the hypothesis. The only genuine test of a theory is one thats attempting to falsify it. We have to be open to the idea that our beliefs might be false, because thats the only way that holding on to them can really mean anything.
+
+In science, we keep making progress over time. As we keep collecting evidence against a hypothesis, we can update our beliefs about the hypothesis. This works according to how scientists make discoveries. As more and more data is collected our knowledge keeps getting better. Arguments made using this data or observations use logic and mathematical reasoning to argue about a theory or hypothesis, and they have a linear relationship. The argument for/against a hypothesis keeps getting stronger over time as the data increases.
+
+Pseudo-scientists clip newspaper reports, collect hearsay, cite other pseudo-science books, and pore over ancient religious or mythological works. They rarely or never make an independent investigation to check their sources. Conflicting evidence is ignored.  The aim of pseudo-science is to rationalize strongly held beliefs, rather than to investigate or to test alternative possibilities. Pseudo-science specializes in jumping to "congenial conclusions," grinding ideological axes, appealing to preconceived ideas and to widespread misunderstandings. 
+
+These are some of the main differences between science and pseudo-scientists. Pseudo-science is differentiated from science because although it claims to be science pseudo-science does not adhere to accepted scientific standards, such as the scientific method, falsifiability of claims, and Mertonian norms. 
+
+\newpage
+
+# Question 7 -
+### What does it involve to be a scientific realist, and what reasons can we have for adopting that position? Do you think those reasons are convincing, and do think it would make any difference for you to take a realist or anti-realist approach to research in your discipline?
+
+## Answer:
+Scientific realism is, at the most general level, the view that the world described by science is the real world as it is, independent of what it might be taken to be. Within philosophy of science, it is often framed as an answer to the question, "How is the success of science to be explained?". The debate over the success of science in this context centers primarily on the status of unobservable entities apparently talked about by scientific theories. Generally, those who are scientific realists assert that one can make valid claims about unobservables as observables, as opposed to instrumentalism.
+
+Scientific realism involves the two basic positions. First, it is a set of claims about the features of an ideal scientific theory. An ideal theory is the sort of theory science aims to produce. Second, it is the commitment that science will eventually produce theories very much like an ideal theory and that science has done pretty well thus far in some domains. It is important to note that one might be a scientific realist regarding some sciences while not being a realist regarding others. For example, one might hold realist attitudes toward physics, chemistry and biology, and not toward economics, psychology and sociology.
+
+##### According to scientific realism, an ideal scientific theory has the following features:
+
+* The claims the theory makes are either true or false, depending on whether the entities talked about by the theory exist and are correctly described by the theory. This is the semantic commitment of scientific realism.
+
+* The entities described by the scientific theory exist objectively and mind-independently. This is the metaphysical commitment of scientific realism.
+
+* There are reasons to believe some significant portion of what the theory says. This is the epistemological commitment
+
+Our position on scientific realism does not preclude us from doing or using science. One can believe that science may not tell us about the phisical world, but rather tell us about a mental one instead. One might believe that science is useful and lets us do cool things but does not make statements that are literally true. One might even claim that science does study the world, but its methods are insufficient to provide knowledge about it. There are a wide variety of positions which can be found under the umbrella of scientific realism, and a great diversity of arguments offered in defence for them. 
+
+I dont think it would make a difference for us to take a realist or anti-realist approach to research in our discipline. It is just a matter of presprctive of how one interprets your theory. 
