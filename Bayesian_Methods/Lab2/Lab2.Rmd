@@ -1,0 +1,329 @@
+---
+title: "Lab2"
+author: "Naveen Gabriel(navga709) Sridhar Adhikarla(sriad858)"
+date: "5 May 2019"
+output: 
+    pdf_document:
+      toc : true
+      toc_depth: 5
+---
+
+
+\newpage
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      eval = TRUE, 
+                      warning = FALSE,
+                      comment = NA,
+                      message=FALSE)
+```
+
+```{r}
+library(ggplot2)
+library(mvtnorm)
+library(gridExtra)
+
+set.seed(123456789)
+```
+
+#1 Linear and polynomial regression
+
+##1 Determining the prior distribution of the model parameters
+```{r}
+templink <- read.delim("TempLinkoping.txt")
+n <- nrow(templink)
+
+templink$time_2 <- templink$time^2
+templink$firstvar <- 1
+templink <- templink[,c(4,1,3,2)]
+
+templink <- as.matrix(templink)
+templink_n <- templink
+```
+
+```{r}
+#Setting up parameters for our prior
+s_sq <- 1
+omga0 <- 0.01*diag(3)
+mu0 <- c(-10,100,-100) 
+v0 <- 4
+
+invchisq <- function(v,sq) {
+  sg_sq <- (v*sq)/rchisq(1,v)
+  return(sg_sq)
+}
+
+#Drawing random variable from chi square
+##Conjugate prior
+draws <- 8
+sg_sq <- invchisq(v0,s_sq)
+var_cov <- sg_sq*solve(omga0)
+
+for (i in 1:draws) {
+theta <- rmvnorm(1,mu0,var_cov)
+y_pred <- templink[,-which(colnames(templink) == "temp")]%*%t(theta) + rnorm(n,0,sg_sq)
+
+templink_n <- cbind(templink_n,y_pred)
+}
+
+#drawing theta from Normal distribution
+templink_n <- as.data.frame(templink_n)
+
+ggplot(templink_n,aes(time,temp)) + geom_point() + 
+  geom_line(aes(y=V5,col="V5")) +
+  geom_line(aes(y=V6,col="V6")) +
+  geom_line(aes(y=V7,col="V7")) +
+  geom_line(aes(y=V8,col="V8")) +
+  geom_line(aes(y=V9,col="V9")) +
+  ggtitle("Temperature vs Time - Prior Belief of Regression Curves") + xlab("Time") + ylab("Temperature") +
+  theme(legend.position = "none")
+
+
+```
+Our prior beliefs on seeing the data does coincides with the group of regression curves which are generated using conjugate prior.
+
+
+##2 Simulate from the joint posterior distribution of $\beta_0$ ,$\beta_1$ ,$\beta_2$ and $\sigma^2$ 
+```{r}
+
+model = lm(temp ~ 1+time+time_2, data = templink_n)
+betahat = model$coefficients
+
+mun <- solve(t(templink[,c(1:3)])%*%templink[,c(1:3)] + omga0) %*% (t(templink[,c(1:3)])%*%templink[,c(1:3)]%*%betahat + omga0%*%mu0)
+omegan <- t(templink[,c(1:3)])%*%templink[,c(1:3)] + omga0
+vn <- v0+n
+vn_sigsq <- v0*s_sq + t(templink[,4])%*%templink[,4] + t(mu0)%*%omga0%*%mu0 - t(mun)%*%omegan%*%mun
+sg_sq_n  <- vn_sigsq/vn
+
+draws_pos <- 1000
+
+marginal_pos <- matrix(ncol=4,nrow = draws_pos)
+colnames(marginal_pos)<- c("beta_0","beta_1","beta_2","sig")
+
+for( i in 1:draws_pos) {
+  sg_sq <- invchisq(vn,sg_sq_n)
+  var_cov <- as.numeric(sg_sq)*solve(omegan)
+  theta <- rmvnorm(1,mun,var_cov)
+  marginal_pos[i,] <- c(theta,sg_sq)
+}
+
+marginal_pos <- as.data.frame(marginal_pos)
+
+p1 <- ggplot(marginal_pos) + geom_histogram(aes(beta_0),color="black") + xlab (expression(beta[0])) + ylab("Count") + 
+                       ggtitle(expression(paste("Marginal Posterior ",beta[0])))
+p2 <- ggplot(marginal_pos) + geom_histogram(aes(beta_1),color="black") + xlab (expression(beta[1])) + ylab("Count") +
+                       ggtitle(expression(paste("Marginal Posterior ",beta[1])))
+p3 <- ggplot(marginal_pos) + geom_histogram(aes(beta_2),color="black") + xlab (expression(beta[2])) + ylab("Count") +
+                       ggtitle(expression(paste("Marginal Posterior ",beta[2])))
+p4 <- ggplot(marginal_pos) + geom_histogram(aes(sig),color="black") + xlab (expression(sigma^2)) + ylab("Count") +
+                       ggtitle(expression(paste("Marginal Posterior ",sigma^2)))
+
+grid.arrange(p1,p2,p3,p4, nrow=2)
+
+```
+The above plot shows the histogram of marginal posteriors for each parameter, i.e $\beta_0$ ,$\beta_1$ ,$\beta_2$ and $\sigma^2$. Each parameter distribution is normal.
+
+
+```{r}
+pose_table <- matrix(ncol=draws_pos,nrow=n)
+
+for(i in 1:draws_pos) {
+  beta0 <- marginal_pos[i,]$beta_0
+  beta1 <- marginal_pos[i,]$beta_1
+  beta2 <- marginal_pos[i,]$beta_2
+  
+  pose_table[,i] <-  beta0 + beta1*templink_n$time + beta2*templink_n$time_2
+}
+
+
+low_high <- function(x) {
+  x <- x[order(-x)]
+  y <- cumsum(x)/sum(x)
+  
+  ind_high <- max(which(y<=0.25))
+  ind_low <- min(which(y>=0.975))
+  
+  high_time <- x[ind_high]
+  low_time <- x[ind_low]
+  
+  return(c(high_time,low_time))
+}
+
+
+templink_n$pos <- apply(pose_table,1,median)
+
+low_high_val <- apply(pose_table,1,FUN=function(x) low_high(x))
+
+templink_n$low_pos <- low_high_val[2,]
+templink_n$high_pos <- low_high_val[1,]
+
+#With posterior median and upper and lower 2.5% confidence
+ggplot(templink_n,aes(time,temp)) + geom_point(color="white") +
+  geom_ribbon(aes(ymin=low_pos, ymax=high_pos),fill = "#ffffb3") +
+  geom_line(aes(y=pos),color="red",size=0.6) + theme_dark() +
+  ggtitle("Temperature vs Time") + xlab("Time") + ylab("Temperature") 
+
+```
+
+The yellow shows the band with 95% credible interval for f(time). The red curve shows the posterior median of regression curve. It does not include all the point and it should not. The idea is here to find our regression curve which is more tighter and explain the variation of temperature with time.  
+
+
+##3. Locate the time with the highest expected temperature
+Differentiaing the quadratic equation, we get the maximum value of time. We know it is the maximum value because the double differential is negative. We then get the distribution of time where the temperature is maximum from the marginal posterior value of $\beta_0$ and $\beta_2$
+$$
+\begin{aligned}
+f(time) &= \beta_0 + \beta_1.time+\beta_2.time^2 \\
+f'(time) &= 0 \\
+\beta_1 + 2.\beta_2.time &= 0 \\
+time &= -\frac{\beta1}{2\beta_2}
+\end{aligned}
+$$
+```{r}
+marginal_pos$time <- apply(marginal_pos,1,FUN=function(x) -x[2]/(2*x[3]))
+
+ggplot(marginal_pos,aes(time)) + geom_histogram(color="white") +
+  ggtitle("Distribution of time for maximum temperatur ")
+```
+From the distribution, it seems the time where the temperature is maximum is between 0.54 and 0.55 which rounds off to 197 days approx which comes in June.
+
+##4. Mitigate overfitting using prior
+We can minimize overfitting by changing th variance of our prior
+
+We know :
+$$
+\begin{aligned}
+P(\theta|Y) &= P(Y|\theta)P(\theta)
+\end{aligned}
+$$
+Assuming zero-mean normally distributed prior on each $\beta_i$ value, all with identical variance $\tau$.
+Likelyhood Prior is given as :
+$$
+\begin{aligned}
+P(Y|\theta) &= \prod_{i=1}^{n}\frac{1}{\sigma.\sqrt{2.\pi}}.e^{-\frac{y_i-(\beta_0+\beta_1x_i+\beta_2x_i . .\beta_px_p)}{2\sigma^2}} \\
+P(\theta) &= \prod_{j=1}^{p}\frac{1}{\tau .\sqrt{2.\pi}}.e^{-\frac{\beta_j^2}{2\tau^2}} \\
+\end{aligned}
+$$
+The posterior log can then be calculated as :
+$$
+\begin{aligned}
+P(\theta|Y) &= log(\prod_{i=1}^{n}\frac{1}{\sigma.\sqrt{2.\pi}}.e^{-\frac{y_i-(\beta_0+\beta_1x_i+\beta_2x_i . .\beta_px_p)}{2\sigma^2}}) + log(\prod_{j=1}^{p}\frac{1}{\tau .\sqrt{2.\pi}}.e^{-\frac{\beta_j^2}{2\tau^2}}) \\
+P(\theta|Y) &=\sum_{i=1}^n (y_i-(\beta_0+\beta_1x_i+\beta_2x_i . .\beta_px_p))^2 + \frac{1}{\tau^2}\sum_{j=1}^p \beta_j^2 \\
+P(\theta|Y) &=\sum_{i=1}^n (y_i-(\beta_0+\beta_1x_i+\beta_2x_i . .\beta_px_p))^2 + \lambda\sum_{j=1}^p \beta_j^2
+\end{aligned}
+$$
+Here $1/\tau^2$ is $\lambda$ which is our regularization term. We can adjust the amount of regularization we want by changing ??. Equivalently, we can adjust how much we want to weight the priors carry on the coefficients (??).  If we have a very small variance (large ??) then the coefficients will be very close to 0; if we have a large variance (small ??) then the coefficients will not be affected much (similar to as if we didn't have any regularization). Which means by increasing the value of lambda our $\Omega_0$ will have low variance
+
+**Source : ** http://bjlkeng.github.io/posts/probabilistic-interpretation-of-regularization/
+
+
+\newpage
+
+#2. Posterior approximation for classification with logistic regression
+
+##1  Logistic regression
+```{r}
+womenwork <- read.table("womenWork.dat",header = TRUE)
+
+model <- glm(Work~0+.,data = womenwork,family = "binomial")
+
+summary(model)
+```
+
+##2. Approximate the posterior distribution of the 8-dim parameter and credible interval
+```{r}
+x <- as.matrix(womenwork[,-1])
+y <- womenwork[,1]
+covnames <- colnames(x)
+tau <- 10
+
+
+LogPostLogistic <- function(betaVect,y,X,mu,Sigma){
+  
+  nPara <- length(betaVect);
+  linPred <- X%*%betaVect;
+  
+  # evaluating the log-likelihood                                    
+  logLik <- sum( linPred*y -log(1 + exp(linPred)));
+  if (abs(logLik) == Inf) logLik = -20000; # Likelihood is not finite, stear the optimizer away from here!
+  
+  # evaluating the prior
+  logPrior <- dmvnorm(betaVect, matrix(0,nPara,1), Sigma, log=TRUE);
+  
+  # add the log prior and log-likelihood together to get log posterior
+  return(logLik + logPrior)
+}
+
+initVal <- as.vector(rep(0,dim(x)[2]))
+# Setting up the prior
+mu <- as.vector(rep(0,dim(x)[2])) # Prior mean vector
+Sigma <- tau^2*diag(dim(x)[2]);
+
+OptimResults<-optim(initVal,LogPostLogistic,gr=NULL,y,x,mu,
+                    Sigma,method=c("BFGS"),control=list(fnscale=-1),
+                    hessian=TRUE)
+
+postMode <- OptimResults$par
+names(postMode) <- covnames
+postCov <- -solve(OptimResults$hessian) # Posterior covariance matrix is -inv(Hessian)
+approxPostStd <- sqrt(diag(postCov)) # Computing approximate standard deviations.
+names(approxPostStd) <- covnames # Naming the coefficient by covariates
+
+postmode <- as.data.frame(postMode)
+colnames(postmode) <- "Coeffecient"
+knitr::kable(data.frame(postmode),caption="Coeffecient value of variables")
+cat("Hessian matrix:\n")
+postCov
+```
+
+```{r}
+mu_nsmall <- postMode["NSmallChild"]
+sd_n_small <- approxPostStd["NSmallChild"]
+
+dist <- as.data.frame(rnorm(1000,mu_nsmall,sd_n_small))
+colnames(dist) <- "var"
+
+intv <- quantile(dist$var, probs = c(0.025, 0.975))
+
+ggplot(dist, aes(x=var)) + geom_histogram(aes(y = ..density..), color= "white", fill="#a6a6a6") +
+  stat_density(geom="line", color="red", size=1) +
+  geom_segment(aes(x = intv[1], y = 0, xend = intv[1], yend = 0.20),linetype="dashed",color="blue", size=1) +
+  geom_segment(aes(x = intv[2], y = 0, xend = intv[2], yend = 0.20),linetype="dashed",color="blue", size=1) +
+  ggtitle("95% credible interval for NSmallChild") + xlab("Variable-nsmallchild") + ylab("Density")
+
+
+```
+
+**Would you say that this feature is an important determinant of the probability that a women works?**
+By looking at the distribution of nsmallChild parameter, 95% credible interval values lies between -2.1 and -0.5 peaking around -1 which means it negatively effect the outcome. So having a child would mean that the women does not work. For greater value of nsmallchild,the value becomes more negative and vice a versa. With this thinking we believe that this variable does effect the outcome.
+
+
+##3. Function that simulates from the predictive distribution of the response variable in a logistic regression
+```{r}
+predict_dist <- function(pred_data, optimres,sampl) {
+
+  var_cov <- rmvnorm(1000,optimres$par,-solve(optimres$hessian))
+  p <- c()
+  
+  for (i in 1:sampl) {
+    p[i] <- (exp(pred_data %*% var_cov[i, ]))/(1 + (exp(pred_data %*% var_cov[i, ])))
+  }
+  return(p)
+
+}
+ 
+  
+pred_data <- c(1, 10, 8, 10, (10/10)^2, 40, 1,1)
+
+predic <- predict_dist(pred_data,OptimResults,1000)
+
+ggplot() + stat_density(aes(x=predic, y=..scaled..),fill="#AFEEEE") + xlab("Probability") +
+           ylab("Density") + ggtitle("Distribution of prediction")
+```
+
+From the above distribution most the probability value is below 0.5 and peaks at 0.2 which means 0 has high chances to be the value for classification which means that the women does not work for the given set of parameters.
+
+\newpage
+#Appendix
+```{r ref.label=knitr::all_labels(), echo = T, eval = F}
+```

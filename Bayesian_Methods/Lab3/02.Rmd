@@ -1,0 +1,138 @@
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE,warning = FALSE)
+library(MASS)
+library(coda)
+library(mvtnorm)
+library(LaplacesDemon)
+library(cowplot)
+```
+
+#  Poisson regression - the MCMC way.
+
+##  A -> Fitting a regression model on the data (GLM)
+
+```{r}
+#Q1
+data = read.table("eBayNumberOfBidderData.dat", header=TRUE)
+n = length(data)
+n_features = ncol(data) - 1 # Except y and const
+feature_labels = colnames(data[,2:ncol(data)])
+  
+y = data$nBids
+X = as.matrix(data[,2:ncol(data)])
+X_X = t(X)%*%X
+glm_model = glm(nBids ~ 0 + ., data = data, family = poisson)
+
+glm_model$coefficients[order(abs(glm_model$coefficients), decreasing = TRUE)]
+#summary(glm_model)
+```
+We have sorted the covariates according to their absolute significance in the output above. Some of the most significant covariates were - "MinBidShare", "Sealed", "VarifyID", "LogBook".
+
+## B -> Bayesian analysis of the Poisson regression
+
+```{r}
+# Beta prior (Zellner's g-prior)
+mu0 = numeric(n_features)
+covar0 = 100 * ginv(X_X)
+init_beta = mvrnorm(n=1, mu0, covar0)
+
+# Log Posterior Poisson model
+logPostProp <- function(betas, X, y){
+  log_prior = dmvnorm(betas, mu0, covar0, log=TRUE)
+  lambda = exp(X%*%betas)
+  
+  log_lik = sum(dpois(y, lambda, log=TRUE))
+  
+  return (log_lik + log_prior)
+}
+
+opt_results = optim(init_beta, logPostProp, gr=NULL, X, y,method=c("BFGS"),
+                    control=list(fnscale=-1), hessian=TRUE)
+
+# MLE beta
+post_mode = opt_results$par
+names(post_mode) = names(glm_model$coefficients)
+post_cov = -solve(opt_results$hessian)
+post_mode[order(abs(post_mode), decreasing = TRUE)]
+```
+Using numerical optimization(optim function in R) for approximating the posterior distribution of beta as a multivariate normal, we get similar values for the covariates. The order of significance remains the same as we got in the previous question. The covariates "MinBidShare", "Sealed", "VarifyID", "LogBook" are still significant. 
+
+We implemented the logPostProp function for this question, which calculates the sum of log prior and the log likelihood given the initial beta values and the data.
+
+Likelihood values can get very small because we multiply so many small values, and there is a possible loss of numerical precision. This is the reason we use the log of the posterior to prevent this problem.
+
+## C -> Simulate Posterior using Metropolis algorithm
+
+```{r}
+Sigma = post_cov
+c = .3
+n_draws = 30000
+burn_in = floor(n_draws / 10)
+n_draws = n_draws + burn_in
+
+metropolisHastings = function(logPostFunc, theta, c_param, ...){
+  theta_draws = matrix(0, n_draws, length(theta))
+  
+  # Set initial 
+  theta_c = mvrnorm(n=1, theta, c_param) 
+  accpt = 0
+  for(i in 1:n_draws){
+    # 1: Draw new candidate theta
+    theta_p = mvrnorm(n=1, theta_c, c_param)
+    
+    # 2: Determine the acceptance probability alpha
+    alpha = min(c(1, exp(logPostFunc(theta_p, ...) - logPostFunc(theta_c, ...))))
+    
+    # 3: Set new value with prob = alpha
+    if(rbern(n=1, p=alpha)==1){
+      theta_c = theta_p
+      accpt = accpt + 1
+    }
+    theta_draws[i,] = theta_c
+  }
+  cat("Acceptance Rate for Metropolis :", accpt/n_draws, "\n")
+  
+  return (theta_draws)
+}
+init_beta = mvrnorm(n=1, mu0, covar0)
+beta_draws = metropolisHastings(logPostProp, init_beta, c*Sigma, X, y)
+
+beta_draws = beta_draws[(burn_in+1):nrow(beta_draws),]
+beta_means = t(as.matrix(colMeans(beta_draws)))
+colnames(beta_means) = feature_labels
+
+tot = dim(beta_draws)[1]
+tp = ggplot() + xlab("Iterations")
+plot_grid(tp + geom_line(aes(x = 1:tot, y = beta_draws[,1])) + ylab("Const"),
+          tp + geom_line(aes(x = 1:tot, y = beta_draws[,2])) + ylab("PowerSeller"),
+          tp + geom_line(aes(x = 1:tot, y = beta_draws[,3])) + ylab("VarifyID"),
+          tp + geom_line(aes(x = 1:tot, y = beta_draws[,4])) + ylab("Sealed"))
+plot_grid(tp + geom_line(aes(x = 1:tot, y = beta_draws[,5])) + ylab("Minblem"),
+          tp + geom_line(aes(x = 1:tot, y = beta_draws[,6])) + ylab("MajBlem"),
+          tp + geom_line(aes(x = 1:tot, y = beta_draws[,7])) + ylab("LargNeg"),
+          tp + geom_line(aes(x = 1:tot, y = beta_draws[,8])) + ylab("LogBook"))
+tp + geom_line(aes(x = 1:tot, y = beta_draws[,9])) + ylab("MinBidShare")
+```
+
+We implemented a universal function for Metropolis haistings simulation algorithm. This function takes in as arguments the logPosterior function, the initial parameters for the posterior, and a parameter to control the variability of the simulations being generated. Along with this you can provide any number of additional arguments required for your logPosterior function. In our scenario we are sending in the data X, Y as the additional arguments for the function. 
+
+We are making 30,000 draws from the posterior, and we add in the additional burn-in period to this as 10 percent of the number of draws we are makin. So Total draws we are making is 33,000 off which we discard the first 3000 draws. 
+
+The parameter "c" that controls the variance of the simulation, was adjusted so that we get an acceptance rate close to 40%. We are getting an acceptance rate of : 0.4351212  for this chain, that is 43% accept rate, which is reasonable.
+
+From the above trace plots for the parameters it looks like the Markov chain has reached the stationary distribution.  
+
+```{r}
+for(i in 1:9){
+  cat("Effective sample size for", feature_labels[i]," : ",  
+      effectiveSize(as.mcmc(beta_draws[,i])), "\n")
+}
+```
+On further analysis for the convergence of the markov chain, we can see that the effective sample size is also good, approx 850 for all the parameters. So we can get a lot of information from this posterior to make interval estimates about the parameter values. 
+
+```{r}
+print("Mean parameter values from the simulated posterior:")
+beta_means
+```
+The parameter values are similar to the ones we got for the first two questions
