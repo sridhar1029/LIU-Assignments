@@ -1,0 +1,27 @@
+---
+title: "Question 1"
+author: "Juan Dordio"
+date: "1/12/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(outliers)
+```
+
+#Question 1. Test of outliers
+
+##a)
+
+dataset = T1_9
+
+mean <- colMeans(dataset[, 2:8])
+Sx <- cov(dataset[, 2:8])
+D2M <- mahalanobis(dataset[, 2:8], mean, Sx)
+setNames(D2M, dataset[, 1])
+
+chisq.test(D2M)
+setNames(scores(D2M, type="chisq", prob = 0.999), dataset[, 1])
+setNames(scores(D2M, type="chisq", prob = 0.761), dataset[, 1])
+setNames(scores(D2M, type="chisq", prob = 0.65), dataset[, 1])
+

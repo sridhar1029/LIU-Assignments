@@ -1,0 +1,196 @@
+---
+title: "Lab3"
+author: "Naveen (navga709), Sridhar(sriad858), Juan(juado206), Samia(sambu064)"
+date: "December 8, 2019"
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: 5
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	message = FALSE,
+	warning = FALSE,
+	comment = NA,
+	fig.width=8, 
+	fig.height=6
+)
+```
+
+\newpage
+
+```{r}
+library(psych)
+library(psy)
+```
+
+
+# Question 1 : Principal components, including interpretation of them
+
+## Read the data
+
+```{r}
+dataset = read.table("T1-9.dat", row.names = 1)
+head(dataset)
+```
+
+## A
+
+```{r}
+##a)
+
+R <- cor(dataset)
+eigen <- eigen(R, symmetric = TRUE, only.values = FALSE)
+round(eigen$values, 4)
+round(eigen$vectors, 3)
+```
+In this first section, we'll use the eigen command to find the eigenvalues and vectors from the sample correlation matrix. eigen$values and eigen$vectors will store the info.
+
+## B
+
+The product of the square root of a given eigenvalue with its corresponding eigenvector will return the correlation of the variables with the components. r_table shows the correlations of the standarized variables with the first two components.
+
+```{r}
+##b)
+
+r_table <- t(round(matrix(c(sqrt(eigen$values[1])*eigen$vectors[, 1], sqrt(eigen$values[2])*eigen$vectors[, 2]), nrow = 7, ncol = 2), 3))
+rownames(r_table) <- c("r y1, z1", "r y2, z2 ")
+r_table
+
+values_table <- t(round(matrix(c(eigen$values, integer(length(eigen$values)), integer(length(eigen$values))), nrow = length(eigen$values), ncol = 3), 3))
+rownames(values_table) <- c("Eigenvalues", "Percentage", "Cumulative")
+colnames(values_table) <- c("x1", "x2", "x3", "x4", "x5", "x6", "x7")
+values_table
+
+for (i in 1:dim(values_table)[2]) {
+  values_table[2, i] <- values_table[1, i] / sum(values_table[1, ])
+  values_table[3, i] <- (values_table[1, i] / sum(values_table[1, ])) + sum(values_table[3, i-1])
+}
+round(values_table, 3)
+```
+
+Likewise, this values_table is created to store the requested cumulative percentage associated with each component. Can be seen how the first two already explain 0.919 of the variance, filled in by the for loop.
+
+## C 
+
+First component measures the overall excellence of a given country while the second one can be used to compare the times in shorter distance with the ones in longer distance.
+
+## D
+
+With this final part of the code, a new matrix called score will be created, filled in by the the score of each country ordered in descending order. The results match pretty well with the ranking that a person with basic notions on athletism could do.
+
+```{r}
+##d)
+
+score <- cbind(row.names(dataset), integer(dim(dataset)[1]))
+
+for (i in 1:dim(dataset)[1]) {
+  score[i, 2] <- r_table[1, ] %*% t(dataset[i, 1:7])
+
+  j <- i
+  while(j>1) {
+    if(score[j, 2] > score[j-1, 2]) {
+      extra <- score[j-1, ]
+      score [j-1, ] <- score[j, ]
+      score[j,] <- extra
+    }
+    j <- j - 1
+  }
+}
+score
+```
+\newpage
+# Question 2
+
+## Selecting number of components required
+
+```{r}
+dataset = read.table("T1-9.dat", row.names = 1)
+fit = factanal(dataset, 3, rotation="varimax")
+scree.plot(fit$correlation)
+fit
+```
+
+According to this plot, two factors would be good for this data. But the p-value for three factors is the highest. So, we carry out the rest of the exersise with 3 factors.
+
+
+## PC estimation method
+
+### Using covariance matrix
+
+```{r}
+R = cor(dataset)
+S = cov(dataset)
+nFactors = 3
+
+fit.PC1 <- principal(dataset, nfactors=nFactors, rotate="varimax", covar = S, n.obs = dim(dataset)[1])
+# print results
+fit.PC1$loadings 
+cat("\nUniqueness:\n")
+fit.PC1$uniquenesses
+
+# plot pc 1 by pc 2
+load <- fit.PC1$loadings[,1:2]
+plot(load,type="n") # set up plot
+text(load,labels=names(dataset),cex=.7) # add variable names
+```
+
+### Using correlation matrix
+
+```{r}
+fit.PC2 <- principal(dataset, nfactors=nFactors, rotate="varimax", covar = R, n.obs = dim(dataset)[1])
+# print results
+fit.PC2$loadings 
+cat("\nUniqueness:\n")
+fit.PC2$uniquenesses
+
+# plot pc 1 by pc 2
+load <- fit.PC2$loadings[,1:2]
+plot(load,type="n") # set up plot
+text(load,labels=names(dataset),cex=.7) # add variable names
+```
+
+The results dont change if we use the correlation matrix or the covariance matrix to calculate the principal components.
+
+## ML estimation method
+
+### Using covariance matrix
+
+```{r}
+fit1 <- factanal(dataset, nFactors, covmat = S, n.obs = dim(dataset)[1],  rotation="varimax")
+fit1 # print results
+
+# plot factor 1 by factor 2
+load <- fit1$loadings[,1:2]
+plot(load,type="n") # set up plot
+text(load,labels=names(dataset),cex=.7) # add variable names
+
+#calculate factor scores
+fit1.scores = cor(t(dataset), fit1$loadings)
+cat("\nFitst six rows of the Factor Scores:\n")
+head(fit1.scores)
+```
+
+### Using correlation matrix
+
+```{r}
+fit2 <- factanal(dataset, nFactors, covmat = R, n.obs = dim(dataset)[1], rotation="varimax")
+fit2 # print results
+
+# plot factor 1 by factor 2
+load <- fit2$loadings[,1:2]
+plot(load,type="n") # set up plot
+text(load,labels=names(dataset),cex=.7) # add variable names
+
+#calculate factor scores
+fit2.scores = cor(t(dataset), fit2$loadings)
+cat("\nFitst six rows of the Factor Scores:\n")
+head(fit2.scores)
+```
+
+It does not make a difference if a correlation matrix is used instead of the covariance matrix to create the factors. We get the same results in both the cases.
+
+## What does it mean that the parameter rotation of factanal() is set to "varimax" by default?
+
+Rotation serves to make the output more understandable. Varimax rotation is an orthogonal rotation of the factor axes to maximize the variance of the squared loadings of a factor (column) on all the variables (rows) in a factor matrix, which has the effect of differentiating the original variables by extracted factor. Each factor will tend to have either large or small loadings of any particular variable. A varimax solution yields results which make it as easy as possible to identify each variable with a single factor. This is the most common rotation option, this is the reason it is set to that rotation by default 

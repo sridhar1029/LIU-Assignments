@@ -1,0 +1,331 @@
+---
+title: "Lab 2"
+author: "Naveen (navga709), Sridhar(sriad858), Juan(juado206), Samia(sambu064)"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: 5
+---
+
+```{r, include=FALSE}
+library(outliers)
+library(heplots)
+library(kableExtra)
+library(gridExtra)
+library(ggplot2)
+library(reshape2)
+library(ellipse)
+library(car)
+library(dplyr)
+```
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	message = FALSE,
+	warning = FALSE,
+	comment = NA,
+	fig.width=8, 
+	fig.height=6
+)
+```
+\newpage
+# Question 1. Test of outliers
+## a
+To answer this question properly we need to calculate again, as we did on the previous lab assignment, the Mahalanobis vector, which we have done manually by using below mentioned formula.
+
+$$(x - u) S^{-1} (x -u)^T$$
+
+```{r}
+dataset = read.table("T1-9.dat")
+colnames(dataset) = c("country", "m100", "m200", "m400", "m800", "m1500", "m3000", "marathon")
+
+p = 7
+means = colMeans(dataset[, 2:8])
+covs = cov(dataset[, 2:8])
+data_mat = as.matrix(dataset[2:8])
+data_centered = data_mat - rep(1, nrow(data_mat)) %*% t(means)
+dataset$mahalanobisDist = diag(data_centered %*% solve(covs) %*% t(data_centered))
+
+#Finding outliers
+sig_lev = 0.001
+thresh <- qchisq(1 - sig_lev, df=p)
+dataset$isOutlier = dataset$mahalanobisDist > thresh
+
+#print the outliers before doing p-adjust
+dataset %>% filter(isOutlier, TRUE) %>% select(country, mahalanobisDist)
+```
+
+This output shows the countries that are outliers.
+
+In this first case, the function works with the given significance of a=0.001. Analyzing the table above, it can be noticed how only three countries are being identified as outliers. Those are: PNG, KORN and SAM, which are the most extreme cases amongst all the calculated distances.
+
+The study could be finished here but seems effective to go a bit deeper and try to modify this quantile through some a modifications in order to find a better differentiation between outliers and average observations.
+
+### p-adjusting for outliers
+
+```{r }
+thresh <- qchisq(1 - sig_lev/(2*p), df=p)
+dataset$adjusted_oultiers = dataset$mahalanobisDist > thresh
+
+#print the outliers after adjusting
+dataset %>% filter(adjusted_oultiers, TRUE) %>% select(country, mahalanobisDist)
+```
+
+By comparing before and after p-adjusted outliers, we can see that before we had PNG, KORN and SAM as outliers but after p-adjust we have reduced the number of outliers e.g. now we have only SAM as outlier
+
+We have reduced the significance level of the test in this part. The lower the significance level the higher the probability for type 2 error. 
+
+## b 
+
+```{r}
+# 1.b North Korea Outlier
+diff_conytry = data_centered[31,]
+distances = as.matrix((diff_conytry%*%solve(covs))*(diff_conytry))
+
+distances = rbind(distances, diff_conytry*diff_conytry)
+rownames(distances) = c("Mahalanobis", "Euclidean")
+distances
+```
+The reason for this is that Euclidean distance simply computes the ordinary straight line between two points and the Mahalanobis distance takes the covariate into account, which leads to elliptic decision boundaries in 2D, therefore narrower than the Eucliden circular, which helps to properly identify the outliers, as done in the previous section. Since the variables in this dataset are not having the same variance and some even have different usits of measurement, using euclidean distance on this dataset is not a good way to proceed.
+
+
+\newpage
+
+# Question 2. Test, confidence region and confidence intervals for a mean vector
+
+Look at the bird data in file T5-12.dat and solve Exercise 5:20 of Johnson, Wichern. Do not use any extra R package or built{in test but code all required matrix calculations. You MAYNOT use loops!
+
+## a
+
+```{r}
+bird_data <- read.table("T5-12.dat")
+mu <- c(190, 275) #given mu values
+x_bar <- colMeans(bird_data)
+
+calcReqVals = function(data){
+  n <- nrow(data)
+  p <- ncol(data)
+  conf <- 0.05
+  S <- cov(data)
+  eig <- eigen(S)
+  x_ <- colMeans(data)
+  
+  quantile <- qf(1 - conf, df1=p, df2=n - p)
+  scale <- sqrt(eig$values * p * (n - 1) * quantile / (n * (n - p)))
+  scaled <- eig$vector %*% diag(scale) # scale eigenvectors to length = square-root
+  xMat <- rbind(x_[1] + scaled[1, ], x_[1] - scaled[1, ])
+  yMat <- rbind(x_[2] + scaled[2, ], x_[2] - scaled[2, ])
+  
+  angles <- seq(0, 2 * pi, length.out=200)
+  ellBase <- cbind(scale[1]*cos(angles), scale[2]*sin(angles)) # making a circle base...
+  ellax <- eig$vector %*% t(ellBase)
+  
+  return(list("ellax"=ellax, "xMat"=xMat, "yMat"=yMat))
+}
+
+out = calcReqVals(bird_data)
+
+#Plotting the confidence region
+plot(bird_data,pch=19, xlab="Tail length", 
+     ylab="Wing length", main="95% Confidence Region")
+lines((out$ellax + x_bar)[1, ], (out$ellax + x_bar)[2, ], asp=1, type="l", lwd=2, col="red")
+matlines(out$xMat, out$yMat, lty=1, lwd=2, col="cyan") #
+points(mu[1], mu[2], pch=4, col="black", lwd=3)
+grid()
+points(x_bar[1],x_bar[2], type="p", col="blue", pch=15)
+```
+
+
+Since the known mean of the male data lies in the confidence interval for the mean of the female data, we are fail to reject the hypothesis that the male and the female have the same mean.
+
+We took most of the above code with understanding from stackoverflow: https://stats.stackexchange.com/questions/9898/how-to-plot-an-ellipse-from-eigenvalues-and-eigenvectors-in-r
+
+We also asked for few help from Maria with respect to code and theory.
+
+
+## b
+
+```{r}
+tsq95_intervals <- function(data) {
+  conf = 0.05
+  n <- nrow(data)
+  p <- ncol(data)
+  x_bar <- colMeans(data)
+  S <- cov(data)
+  offset <- sqrt(p * (n - 1) * qf(1 - conf, df1=p, df2=n - p) / (n - p) * diag(S) / n)
+  rbind(x_bar - offset, x_bar + offset)
+}
+
+bon95_intervals <- function(data) {
+  conf = 0.05
+  n <- nrow(data)
+  p <- ncol(data)
+  x_bar <- colMeans(data)
+  S <- cov(data)
+  offset <- sqrt(diag(S) / n) * qt(1 - conf / (2 * p), df=n - 1)
+  rbind(x_bar - offset, x_bar + offset)
+}
+
+cat("\n95% T-square interval\n")
+tsq95_intervals(bird_data)
+
+cat("\n95% Bonferroni interval\n")
+bon95_intervals(bird_data)
+```
+
+The only advantage we could find for T-squared intervals over Bonferroni interval is that, T-squared intervals account for the correlation between variates, while Boneferroni does not. Benferroni us useful when we have to find the CI for the individual component.
+
+## c
+
+```{r}
+
+dataEllipse(x=bird_data$V1, y=bird_data$V2, pch=20, levels=c(0.68, 0.95),
+            xlim=c(160, 230), ylim=c(240, 320), center.cex=0.5, main="Contour plot")
+
+
+grid.arrange(ggplot(data = bird_data, aes(sample = V1)) + 
+                 stat_qq() + stat_qq_line() + ggtitle("Tail Length"),
+                 ggplot(data = bird_data, aes(sample = V2)) + 
+                 stat_qq() + stat_qq_line() + 
+                 ggtitle("Wing Length"),ncol=2)
+```
+
+Since the data points go along the line in the qqplots, it shows that the data is normally distributed. A bivariate normal distribution would be a viable population model.
+
+
+\newpage
+
+# Question 3. Comparison of mean vectors (one{way MANOVA)
+
+## a
+```{r fig.height=10, fig.width=6}
+sk <- Skulls
+#aggregate(sk["c40,2:5],by=list(sk$epoch), FUN =sd)
+
+
+corr_mat <- cor(sk[sk$epoch=="c4000BC",2:5])
+corr_mat2 <- cor(sk[sk$epoch=="c3300BC",2:5])
+corr_mat3 <- cor(sk[sk$epoch=="c1850BC",2:5])
+corr_mat4 <- cor(sk[sk$epoch=="c200BC",2:5])
+corr_mat5 <- cor(sk[sk$epoch=="cAD150",2:5])
+
+par(mfrow=c(3,2))
+
+plotcorr(corr_mat,outline=TRUE,diag=FALSE,main="c4000BC")
+plotcorr(corr_mat2, diag=FALSE,main="c3300BC")
+plotcorr(corr_mat3, diag=FALSE,main ="c1850BC")
+plotcorr(corr_mat4, diag=FALSE,main ="c200BC")
+plotcorr(corr_mat5, diag=FALSE,main ="cAD150")
+
+```
+
+From above correlation plot over 5 time period the common thing which we noticed is the postive correlation between basibregmatic height and basialiveolar length. Moreover, the correlation become more stronger between them over the period.  In AD 150 the correlation between nh and mb was negative which was unprecedented.
+
+```{r echo=FALSE}
+tall_sk <- reshape2::melt(sk, id="epoch")
+
+ggplot(tall_sk) +
+geom_boxplot(aes(x=factor(epoch), y=value, fill=variable)) +
+ggtitle("Box plot") + xlab("Years") + ylab("Value")
+```
+
+From this the only thing which is  informative is that the mean bl length decreased over the years while rest of the mean measurement did not follow any pattern. Also the distance between mean bh and mb increased towards the end of AD150. As maximal breadth of the skull increased , the height of the skull increased as well. Were brains were increasing in size  ?
+
+
+## b
+```{r echo=FALSE}
+mean_group <- sk %>% group_by(epoch) %>% summarise_all(funs(mean(., na.rm = T)))
+kable(mean_group,caption = "Mean of covariates in different groups") %>% kable_styling(latex_options = "hold")
+```
+
+```{r}
+manova_fit <- manova(cbind(mb, bh, bl, nh) ~ sk$epoch, sk)
+summary(manova_fit)
+```
+
+Pillai's trace is used as a test statistic in MANOVA. It is a positive valued statistic ranging from 0 to 1. Increasing values means that effects are contributing more to the model; you should reject the null hypothesis for large values.
+
+Pillai's trace is considered to be the most powerful and robust statistic for general use, especially for departures from assumptions -- Wikipedia
+
+Here the p value is less than 0.05 so we reject the null hypothesis which is ,that the vector means are same across group.
+
+
+## c
+
+$$\tau_{ki}-\tau_{li}$$ 
+
+Has the interval
+
+$$\bar{x}_{ki}-\bar{x}_{li} \pm t_{n-g}\bigg(\frac{\alpha}{pg(g-1)}\bigg)\sqrt{\frac{w_{ii}}{n-g}\bigg(\frac{1}{n_k}+\frac{1}{n_l}\bigg)}$$
+
+```{r}
+t2_interval <- function(data, means, conf) {
+  cov_ep = function(x){
+    cov(data[data$epoch==x,-1], use="na.or.complete")
+  }
+  
+  uv = means[[1]]
+  n_epoch =30
+  n <- nrow(data)
+  g <- nrow(means)
+  p <- ncol(means[-1])
+  x <- t(means[-1])
+  colnames(x) = uv
+  
+  tau_hat = x - (n_epoch/n)*(x[,1]+x[,2]+x[,3]+x[,4]+x[,5])
+  
+  W = diag((n_epoch-1)*(cov_ep(uv[1]) + cov_ep(uv[2]) + cov_ep(uv[3]) + cov_ep(uv[4]) + cov_ep(uv[5])))
+  
+  tval = qt(1-conf/(p*g*(g-1)),n-g)
+  
+  for (i in c(1:g)){
+    for(j in c(i:g)){
+      lower = (tau_hat[,i] - tau_hat[,j]) - (tval * sqrt((W/(n-g)) * (2/n_epoch)))
+      upper = (tau_hat[,i] - tau_hat[,j]) + (tval * sqrt((W/(n-g)) * (2/n_epoch)))
+      #(matrix(lower,upper))
+      ci = cbind(lower , upper)
+      cat("\n\nEpoch",i," - Epoch", j ,"\n")
+      print(ci)
+    }
+  }
+}
+
+t2_interval(sk, mean_group, 0.05)
+```
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+residual <- manova_fit$res %>% as.data.frame()
+
+
+plot_hist_dens <- function (col_name){
+    ggplot(residual,aes_string(col_name) ) + 
+    geom_histogram(aes(y=..density..),colour="black",fill="gray",bin=10) +
+    geom_line(stat="density",colour="red",alpha=1,size=1) + theme_light() +
+    xlab(col_name) + ylab("Density")
+}
+
+
+```
+
+```{r echo=FALSE}
+
+p1 <- plot_hist_dens("mb")
+p2 <- plot_hist_dens("bh")
+p3 <- plot_hist_dens("bl")
+p4 <- plot_hist_dens("nh")
+
+grid.arrange(p1, p2, p3, p4, ncol=2,nrow=2,top = "Density plot and histogram")
+```
+
+The variables are nearly normally distributed.
+
+
+\newpage
+# Appendix
+
+```{r , ref.label=knitr::all_labels(),echo=TRUE,eval=FALSE}
+
+```

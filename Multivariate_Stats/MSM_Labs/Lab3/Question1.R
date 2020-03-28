@@ -1,0 +1,68 @@
+#Question 1: Principal components, including interpretation of them
+dataset = T1_9
+
+##a)
+
+#In this first section, we'll use the eigen command to find the eigenvalues and vectors 
+#from the sample correlation matrix. eigen$values and eigen$vectors will store the info.
+
+R <- cor(dataset[, 2:8])
+eigen <- eigen(R, symmetric = TRUE, only.values = FALSE)
+round(eigen$values, 4)
+round(eigen$vectors, 3)
+
+
+##b)
+
+#The product of the square root of a given eigenvalue with its corresponding eigenvector will return the 
+#correlation of the variables with the components. r_table shows the correlations of the standarized 
+#variables with the first two components.
+
+r_table <- t(round(matrix(c(sqrt(eigen$values[1])*eigen$vectors[, 1], sqrt(eigen$values[2])*eigen$vectors[, 2]), nrow = 7, ncol = 2), 3))
+rownames(r_table) <- c("r y1, z1", "r y2, z2 ")
+r_table
+
+#Likewise, this values_table is created to store the requested cumulative percentage associated with each component.
+#Can be seen how the first two already explain 0.919 of the variance, filled in by the for loop.
+
+values_table <- t(round(matrix(c(eigen$values, integer(length(eigen$values)), integer(length(eigen$values))), nrow = length(eigen$values), ncol = 3), 3))
+rownames(values_table) <- c("Eigenvalues", "Percentage", "Cumulative")
+colnames(values_table) <- c("x1", "x2", "x3", "x4", "x5", "x6", "x7")
+values_table
+
+for (i in 1:dim(values_table)[2]) {
+  values_table[2, i] <- values_table[1, i] / sum(values_table[1, ])
+  values_table[3, i] <- (values_table[1, i] / sum(values_table[1, ])) + sum(values_table[3, i-1])
+}
+round(values_table, 3)
+
+
+##c) 
+
+##First component measures the overall excellence of a given country while the second one can be used to compare
+##the times in shorter distance with the ones in longer distance.
+
+
+##d)
+
+#With this final part of the code, a new matrix called score will be created, filled in by the the score 
+#of each country ordered in descending order. The results match pretty well with the ranking that 
+#a person with basic notions on athletism could do.
+
+
+score <- cbind(dataset[, 1], integer(dim(dataset)[1]))
+
+for (i in 1:dim(dataset)[1]) {
+  score[i, 2] <- r_table[1, ] %*% t(dataset[i, 2:8])
+
+  j <- i
+  while(j>1) {
+    if(score[j, 2] > score[j-1, 2]) {
+      extra <- score[j-1, ]
+      score [j-1, ] <- score[j, ]
+      score[j,] <- extra
+    }
+    j <- j - 1
+  }
+}
+score

@@ -1,0 +1,152 @@
+---
+title: '03'
+output: pdf_document
+---
+
+```{r include=FALSE}
+library(heplots)
+library(kableExtra)
+library(gridExtra)
+library(ggplot2)
+library(reshape2)
+library(ellipse)
+```
+
+# 2 Test, confidence region and condence intervals for a mean vector
+
+## a
+
+```{r}
+bird <- read.table("T5-12.dat")
+mu <- c(190, 275)
+x_ <- colMeans(bird)
+s <- var(bird)
+p <- ncol(bird)
+n <- nrow(bird)
+conf <- 0.95
+alph <- 1-conf
+lambda <- eigen(s)$values
+eigen_vec <- eigen(s)$vectors
+angles <- seq(0, 2*pi, length.out=200) 
+
+offset <- sqrt(lambda*p*(n-1)*qf(alph,p,n-p)/(n*(n-p)))
+ellps_axis <- eigen_vec%*%diag(offset)
+x_vec <- rbind(x_[1]+ellps_axis[1,],x_[1]-ellps_axis[1,])
+y_vec <- rbind(x_[2]+ellps_axis[2,],x_[1]-ellps_axis[2,])
+
+ellBase <- cbind(offset[1]*cos(angles), offset[2]*sin(angles)) 
+ellRot  <- eigen_vec %*% t(ellBase)
+
+{plot(bird[,1],bird[,2],pch=19, xlab="Tail length", ylab="Wing length", main="95% confidence ellipse")
+lines((ellRot+mu)[1, ], (ellRot+mu)[2, ], asp=1, type="l", lwd=2)
+matlines(x_vec, y_vec, lty=1, lwd=2, col="green")
+points(mu[1], mu[2], pch=4, col="red", lwd=3)
+}
+```
+
+Above code was referred from stack-overflow :
+https://stats.stackexchange.com/questions/9898/how-to-plot-an-ellipse-from-eigenvalues-and-eigenvectors-in-r
+
+# 3 Comparison of mean vectors (one{way MANOVA)
+
+## a
+```{r echo=FALSE, fig.height=10, fig.width=6}
+sk <- Skulls
+#aggregate(sk["c40,2:5],by=list(sk$epoch), FUN =sd)
+
+
+corr_mat <- cor(sk[sk$epoch=="c4000BC",2:5])
+corr_mat2 <- cor(sk[sk$epoch=="c3300BC",2:5])
+corr_mat3 <- cor(sk[sk$epoch=="c1850BC",2:5])
+corr_mat4 <- cor(sk[sk$epoch=="c200BC",2:5])
+corr_mat5 <- cor(sk[sk$epoch=="cAD150",2:5])
+
+par(mfrow=c(3,2))
+
+plotcorr(corr_mat,outline=TRUE,diag=FALSE,main="c4000BC")
+plotcorr(corr_mat2, diag=FALSE,main="c3300BC")
+plotcorr(corr_mat3, diag=FALSE,main ="c1850BC")
+plotcorr(corr_mat4, diag=FALSE,main ="c200BC")
+plotcorr(corr_mat5, diag=FALSE,main ="cAD150")
+
+```
+
+From above correlation plot over 5 time period the common thing which we noticed is the postive correlation between basibregmatic height and basialiveolar length. Moreover, the correlation become more stronger between them over the period.  In AD 150 the correlation between nh and mb was negative which was unprecedented.
+
+```{r echo=FALSE}
+tall_sk <- reshape2::melt(sk, id="epoch")
+
+ggplot(tall_sk) +
+geom_boxplot(aes(x=factor(epoch), y=value, fill=variable)) +
+ggtitle("Box plot") + xlab("Years") + ylab("Value")
+```
+
+From this the only thing which is  informative is that the mean bl length decreased over the years while rest of the mean measurement did not follow any pattern. Also the distance between mean bh and mb increased towards the end of AD150. As maximal breadth of the skull increased , the height of the skull increased as well. Were brains were increasing in size  ?
+
+
+## b
+```{r echo=FALSE}
+mean_group <- aggregate(sk[,2:5],by=list(sk$epoch), FUN =mean)
+colnames(mean_group)[1] <- "Group"
+
+kable(mean_group,caption = "Mean of covariates in different groups") %>% kable_styling(latex_options = "hold")
+```
+
+```{r}
+manova_fit <- manova(cbind(mb, bh, bl, nh) ~ sk$epoch, sk)
+summary(manova_fit,test="Pillai")
+```
+
+Pillai's trace is used as a test statistic in MANOVA. It is a positive valued statistic ranging from 0 to 1. Increasing values means that effects are contributing more to the model; you should reject the null hypothesis for large values.
+
+Pillai's trace is considered to be the most powerful and robust statistic for general use, especially for departures from assumptions. 
+
+Here the p value is less than 0.05 so we reject the null hypothesis which is ,that the vector means are same across group.
+
+
+## c
+
+```{r}
+t2_interval <- function(data, conf) {
+n <- nrow(data)
+p <- ncol(data)
+x_ <- colMeans(data)
+S <- cov(data)
+offset <- sqrt(p * (n - 1) * qf(1 - conf, df1=p, df2=n - p) / (n - p) * diag(S) / n)
+rbind(x_ - offset, x_ + offset)
+}
+
+conf_interval <-  t2_interval(sk[,2:5],0.05)
+```
+
+```{r}
+
+kable(conf_interval,caption = "95% confidence interval") %>% 
+    kable_styling(latex_options = "hold")
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+residual <- manova_fit$res %>% as.data.frame()
+
+
+plot_hist_dens <- function (col_name){
+    ggplot(residual,aes_string(col_name) ) + 
+    geom_histogram(aes(y=..density..),colour="black",fill="gray",bin=10) +
+    geom_line(stat="density",colour="red",alpha=1,size=1) + theme_light() +
+    xlab(col_name) + ylab("Density")
+}
+
+
+```
+
+```{r echo=FALSE}
+
+p1 <- plot_hist_dens("mb")
+p2 <- plot_hist_dens("bh")
+p3 <- plot_hist_dens("bl")
+p4 <- plot_hist_dens("nh")
+
+grid.arrange(p1, p2, p3, p4, ncol=2,nrow=2,top = "Density plot and histogram")
+```
+
+The variables are nealy normally distributed.

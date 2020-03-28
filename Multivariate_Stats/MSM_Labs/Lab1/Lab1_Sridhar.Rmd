@@ -1,0 +1,65 @@
+---
+title: "Lab1_Sridhar"
+author: "Sridhar Adhikarla (sriad858)"
+date: "November 18, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE
+  )
+```
+
+```{r message=FALSE, warning=FALSE}
+library(dplyr)
+library(ggplot2)
+library(stargazer)
+```
+
+
+# Question 1
+
+## a - Describe the 7 variables with mean values, standard deviations e.t.c.
+
+```{r}
+data_T1 = read.csv("T1-9.dat", sep = "\t", header = F)
+colnames(data_T1) = c("Country", "100m", "200m", "400", "800", "1500", "3000", "marathon")
+
+data_T1 %>% 
+  head(5)
+
+data_T1 %>%
+  select(-Country) %>%
+  stargazer(type = "text", 
+    summary.stat = c("min", "p25", "median", "p75", "max", "median", "sd")
+)
+```
+
+## b - Illustrate the variables with different graphs (explore what plotting possibilities R has)
+
+```{r}
+```
+
+# Question 2
+
+## a - Compute the covariance and correlation matrices for the 7 variables. Is there any apparent structure in them? Save these matrices for future use.
+
+```{r}
+```
+
+## b - Generate and study the scatterplots between each pair of variables. Any extreme values?
+
+```{r}
+```
+
+## c - Explore what other plotting possibilities R orders for multivariate data. Present other (at least two) graphs that you and interesting with respect to this data set.
+
+```{r}
+```
+
+# Question 3
+
+```{r}
+```

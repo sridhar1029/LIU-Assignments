@@ -1,0 +1,21 @@
+---
+title: "Question e"
+author: "Juan Dordio"
+date: "15/12/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+```
+dataset = scale(P10_16)
+X1 = dataset[1:3, ]
+X2 = dataset[4:5, ]
+
+a1 <- matrix(c(0.03190054, -0.06528672, 0.05237954), nrow = 3, ncol = 1)
+a2 <- matrix(c(-0.026875170, 0.002375188, 0.020018672), nrow = 3, ncol = 1)
+b1 <- matrix(c(-9.7227405, 0.5197661), nrow = 2, ncol = 1)
+b2 <- matrix(c(2.0576724, -0.2314993), nrow = 2, ncol = 1)
+
+U1 <- t(a1) %*% X1
+V1 <- t(a2) %*% X1

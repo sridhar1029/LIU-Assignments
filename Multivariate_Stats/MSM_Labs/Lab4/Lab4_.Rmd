@@ -1,0 +1,133 @@
+---
+title: "Lab4"
+author: "Naveen (navga709), Sridhar(sriad858), Juan(juado206), Samia(sambu064)"
+date: "December 13, 2019"
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: 5
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	message = FALSE,
+	warning = FALSE,
+	comment = NA,
+	fig.width=8, 
+	fig.height=6
+)
+```
+
+\newpage
+
+# Assignment 1
+
+## A - Test at the 5% level if there is any association between the groups of variables.
+
+```{r}
+data_1 <- read.table("P10-16.DAT")
+data_1
+```
+
+```{r}
+p = 3
+q = 2
+n = 46
+alpha = 0.05
+
+#Split the covarience matrix
+S11 = as.matrix(data_1[1:p, 1:p])
+S22 = as.matrix(data_1[(p+1):(p+q), (p+1):(p+q)])
+S12 = as.matrix(data_1[1:p, (p+1):(p+q)])
+S21 = as.matrix(data_1[(p+1):(p+q), 1:p])
+S = as.matrix(data_1)
+
+test_stat = (n - 1 - 0.5*(p + q + 1)) * log((det(S11) * det(S22))/det(S))
+critical_value = qchisq(alpha, df=p*q)
+cat("\nTest Stat : ", test_stat, 
+    ",\tCritical Value : ", critical_value, 
+    ",\tResult : ", test_stat > critical_value, "\n")
+
+```
+
+Using the formulas from the book we perfoemed the test for association between the groups of variables at 5% level of significance. The result was that the two groups have a strong association and hence we are successful at rejecting the null hypothesis(zero association between the groups). 
+
+\newpage
+
+## B - How many pairs of canonical variates are significant?
+```{r}
+#calculte the eigen values and eigen vectors
+e_mat = solve(sqrt(S11)) %*% S12 %*% solve(S22) %*% S21 %*% solve(sqrt(S11))
+e = eigen(e_mat)
+
+f_mat = solve(sqrt(S22)) %*% S21 %*% solve(S11) %*% S12 %*% solve(sqrt(S22))
+f = eigen(f_mat)
+
+sqCanonicalCorr = e$values
+
+for(k in 1:q){
+  temp = c("\nFirst", "\nSecond")
+  test_stat = ( - log(prod(1 - sqCanonicalCorr[(k+1):3])) )*(n - 1 - 0.5 * (p+q+1))
+  critical_value = qchisq(alpha, df=(p-k)*(q-k))
+  cat(temp[k], "Canonical Correlation : ", test_stat,
+      ",\tCritical Value : ", critical_value,
+      ",\tResult : ", test_stat > critical_value, "\n")
+}
+```
+There are two significant canonical variates. This is maximum possible number of variates for this data as the smaller group has just two members. Both the possible canonical variates are significant.
+
+## C - Interpret the significant squared canonical correlations.
+```{r}
+sqCanonicalCorr[1:q]
+```
+The first two eigen values of the matrix $$ S_{11}^{-1/2} * S_{12} * S_{22}^{-1} * S_{21} * S_{11}^{-1/2} $$ are the significant squared canonical correlations.
+
+\newpage
+
+## D - Interpret the canonical variates by using the coeffcients and suitable correlations.
+```{r}
+#calculate the linear constants
+a1 = t(t(as.matrix(e$vectors[1,])) %*% solve(sqrt(S11)))
+a2 = t(t(as.matrix(e$vectors[2,])) %*% solve(sqrt(S11)))
+
+b1 = t(t(as.matrix(f$vectors[1,])) %*% solve(sqrt(S22)))
+b2 = t(t(as.matrix(f$vectors[2,])) %*% solve(sqrt(S22)))
+```
+
+$$a_1 = e_1' * S_{11}^{-1/2}$$
+$$ U_1 = a_1 * X^1$$
+```{r}
+t(a1)
+```
+
+$$a_2 = e_2' * S_{11}^{-1/2}$$
+$$ U_2 = a_2 * X^1$$
+
+```{r}
+t(a2)
+```
+$$b_1 = e_1' * S_{22}^{-1/2}$$
+$$ V_1 = b_1 * X^2$$
+
+```{r}
+t(b1)
+```
+$$b_2 = e_2' * S_{22}^{-1/2}$$
+$$ V_2 = b_2 * X^2$$
+
+```{r}
+t(b2)
+```
+
+\newpage
+
+## E - Are the significant canonical variates good summary measures of the respective data sets?
+
+Yes, we think that the canonical variates are a good summary measure of the respective dataset. As we can see from the dataset of covariance matrix, it is not calculated from a scaled dataset. This is the reason some of the variables have large variance and some have very small. The canonical covariates assigned to the variables with large variance are vary small and the variables with small variance is large. So, we think that the canonical covariates are a good summary measure for this dataset. 
+
+## F - Give your opinion on the success of this canonical correlation analysis.
+
+In canonical correlation analysis we measure the realtionship between the variables. CCA is usefull and gives you successful results in some conditions. If data doesnt satify the conditions then the results might not be satisfactory, not successfull analysis as well. For instance,  canonical correlation will be greatly effected by the outliers and the variables should not be completly redundant. In our case, results were satisfactory and seems a successfull analysis of canonical correlation.
+
+
+
